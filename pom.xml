@@ -67,7 +67,7 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>
-                                org.anticorruption_application.anticorruptionapplication/org.anticorruption_application.anticorruptionapplication.HelloApplication
+                                org.anticorruption_application.anticorruptionapplication/org.anticorruption.application.HelloApplication
                             </mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>

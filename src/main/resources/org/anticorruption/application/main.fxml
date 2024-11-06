@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="org.anticorruption.application.MainController"
+      spacing="10"
+      stylesheets="@styles.css">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <TabPane fx:id="mainTabPane">
+        <Tab fx:id="createReportTab" text="Написать донос" closable="false">
+            <VBox spacing="10">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                <DatePicker fx:id="incidentDatePicker" promptText="Дата предполагаемого нарушения"/>
+                <TextField fx:id="incidentTimeField" promptText="Время предполагаемого нарушения"/>
+                <TextField fx:id="incidentLocationField" promptText="Место предполагаемого нарушения"/>
+                <TextField fx:id="involvedPersonsField" promptText="Имена и должности вовлеченных лиц"/>
+                <TextArea fx:id="descriptionArea" promptText="Подробное описание произошедшего инцидента" wrapText="true"/>
+                <TextArea fx:id="evidenceDescriptionArea" promptText="Описание имеющихся доказательств" wrapText="true"/>
+                <TextField fx:id="witnessesField" promptText="Информация о свидетелях"/>
+                <Button text="Отправить" onAction="#onSubmitReport"/>
+            </VBox>
+        </Tab>
+
+        <Tab fx:id="processReportsTab" text="Обработка заявок" closable="false">
+            <VBox spacing="10">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                <Label text="Содержимое вкладки 'Обработка заявок'"/>
+            </VBox>
+        </Tab>
+
+        <Tab fx:id="adminTab" text="Администрирование" closable="false">
+            <VBox spacing="10">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                <Label text="Содержимое вкладки 'Администрирование'"/>
+            </VBox>
+        </Tab>
+    </TabPane>
+</VBox>

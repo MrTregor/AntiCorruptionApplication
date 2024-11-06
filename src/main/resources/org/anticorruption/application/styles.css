@@ -1,0 +1,156 @@
+.root {
+    -fx-background-color: #2b2b2b;
+}
+
+.vbox {
+    -fx-background-color: #2b2b2b;
+}
+
+.tab-pane {
+    -fx-background-color: #2b2b2b;
+}
+
+.tab-pane .tab-header-area {
+    -fx-background-color: #3c3f41;
+}
+
+.tab-pane .tab-header-background {
+    -fx-background-color: #3c3f41;
+}
+
+.tab {
+    -fx-background-color: #3c3f41;
+    -fx-text-base-color: #a9b7c6;
+}
+
+.tab:selected {
+    -fx-background-color: #4e5254;
+}
+
+.tab-label {
+    -fx-text-fill: #a9b7c6;
+}
+
+.text-field {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: #a9b7c6;
+    -fx-prompt-text-fill: #808080;
+    -fx-border-color: #323232;
+    -fx-border-radius: 3;
+    -fx-padding: 5 8;
+}
+
+.text-field:focused {
+    -fx-border-color: #4B6EAF;
+    -fx-background-color: #45494A;
+}
+
+.text-area {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: #a9b7c6;
+    -fx-prompt-text-fill: #808080;
+}
+
+.text-area .content {
+    -fx-background-color: #3c3f41;
+}
+
+.text-area:focused .content {
+    -fx-background-color: #45494A;
+}
+
+.date-picker {
+    -fx-background-color: #3c3f41;
+}
+
+.date-picker .arrow-button {
+    -fx-background-color: #3c3f41;
+    -fx-border-color: #323232;
+}
+
+.date-picker .arrow-button:hover {
+    -fx-background-color: #45494A;
+}
+
+.date-picker .text-field {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: #a9b7c6;
+}
+
+.button {
+    -fx-background-color: #4B6EAF;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+
+.button:hover {
+    -fx-background-color: #537BC2;
+}
+
+.button:pressed {
+    -fx-background-color: #3d5a8c;
+}
+
+.label {
+    -fx-text-fill: #a9b7c6;
+}
+
+/* Стили для скроллбара */
+.scroll-bar {
+    -fx-background-color: #2b2b2b;
+    -fx-pref-width: 12;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #555555;
+    -fx-background-radius: 6;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #666666;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-background-color: #a9b7c6;
+}
+
+/* Стили для календаря в DatePicker */
+.date-picker-popup {
+    -fx-background-color: #3c3f41;
+}
+
+.date-picker-popup .month-year-pane {
+    -fx-background-color: #3c3f41;
+}
+
+.date-picker-popup .calendar-grid {
+    -fx-background-color: #3c3f41;
+}
+
+.date-picker-popup .day-cell {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: #a9b7c6;
+}
+
+.date-picker-popup .day-cell:hover {
+    -fx-background-color: #4B6EAF;
+}
+
+.date-picker-popup .selected {
+    -fx-background-color: #4B6EAF;
+}
+
+.date-picker-popup .previous-month,
+.date-picker-popup .next-month {
+    -fx-text-fill: #808080;
+}

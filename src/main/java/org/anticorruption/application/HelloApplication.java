@@ -1,7 +1,6 @@
-package org.anticorruption_application.anticorruptionapplication;
+package org.anticorruption.application;
 
 import javafx.application.Application;
-import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;

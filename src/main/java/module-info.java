@@ -5,6 +5,6 @@ module org.anticorruption_application.anticorruptionapplication {
     requires com.fasterxml.jackson.databind;
 
 
-    opens org.anticorruption_application.anticorruptionapplication to javafx.fxml;
-    exports org.anticorruption_application.anticorruptionapplication;
+    opens org.anticorruption.application to javafx.fxml;
+    exports org.anticorruption.application;
 }

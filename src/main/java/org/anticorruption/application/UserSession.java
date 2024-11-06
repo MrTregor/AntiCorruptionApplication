@@ -1,5 +1,6 @@
-package org.anticorruption_application.anticorruptionapplication;
+package org.anticorruption.application;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserSession {
@@ -8,7 +9,9 @@ public class UserSession {
     private List<String> groups;
     private String username;
 
-    private UserSession() {}
+    private UserSession() {
+        groups = new ArrayList<>();
+    }
 
     public static UserSession getInstance() {
         if (instance == null) {
@@ -43,11 +46,11 @@ public class UserSession {
 
     public void clear() {
         token = null;
-        groups = null;
+        groups.clear(); // Очищаем список, а не присваиваем null
         username = null;
     }
 
     public boolean hasGroup(String group) {
-        return groups != null && groups.contains(group);
+        return groups.contains(group);
     }
 }

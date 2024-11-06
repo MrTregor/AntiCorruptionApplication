@@ -1,4 +1,4 @@
-package org.anticorruption_application.anticorruptionapplication;
+package org.anticorruption.application;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -7,17 +7,19 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.TextField;
 import javafx.scene.control.PasswordField;
+
 import java.net.URI;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Base64;
 import java.util.ArrayList;
 import java.util.List;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.JsonNode;
-import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
 public class LoginController {
@@ -111,6 +113,9 @@ public class LoginController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("main.fxml"));
             Parent root = loader.load();
 
+            MainController controller = loader.getController();
+            controller.setupTabs();
+
             Stage stage = (Stage) usernameField.getScene().getWindow();
             Scene scene = new Scene(root);
             stage.setScene(scene);
@@ -118,6 +123,7 @@ public class LoginController {
             stage.show();
         } catch (Exception e) {
             System.err.println("Ошибка при открытии главной формы: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
