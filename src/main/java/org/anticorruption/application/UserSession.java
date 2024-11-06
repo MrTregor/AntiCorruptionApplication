@@ -1,8 +1,13 @@
 package org.anticorruption.application;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@Setter
+@Getter
 public class UserSession {
     private static UserSession instance;
     private String token;
@@ -18,30 +23,6 @@ public class UserSession {
             instance = new UserSession();
         }
         return instance;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setGroups(List<String> groups) {
-        this.groups = groups;
-    }
-
-    public List<String> getGroups() {
-        return groups;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getUsername() {
-        return username;
     }
 
     public void clear() {

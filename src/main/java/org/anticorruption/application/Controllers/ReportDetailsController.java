@@ -8,6 +8,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.stage.Stage;
+import lombok.Setter;
 import org.anticorruption.application.ConfigManager;
 import org.anticorruption.application.Models.Report;
 import org.anticorruption.application.UserSession;
@@ -36,15 +37,12 @@ public class ReportDetailsController {
     private TextArea solutionArea;
 
     private Report report;
+    @Setter
     private Stage stage;
     private final HttpClient client = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final String SERVER_URL = ConfigManager.getProperty("server.url");
-
-    public void setStage(Stage stage) {
-        this.stage = stage;
-    }
 
     public void setReport(Report report) {
         this.report = report;
