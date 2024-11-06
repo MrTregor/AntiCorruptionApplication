@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" fx:controller="org.anticorruption_application.anticorruptionapplication.MainController">
+    <TabPane fx:id="mainTabPane">
+        <Tab fx:id="createReportTab" text="Написать донос">
+            <!-- Содержимое вкладки "Написать донос" -->
+        </Tab>
+        <Tab fx:id="processReportsTab" text="Обработка заявок">
+            <!-- Содержимое вкладки "Обработка заявок" -->
+        </Tab>
+        <Tab fx:id="adminTab" text="Администрирование">
+            <!-- Содержимое вкладки "Администрирование" -->
+        </Tab>
+    </TabPane>
+</VBox>
