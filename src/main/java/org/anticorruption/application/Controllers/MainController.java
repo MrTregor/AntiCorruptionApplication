@@ -1,21 +1,36 @@
-package org.anticorruption.application;
+package org.anticorruption.application.Controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 
+import java.io.IOException;
 import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
+import java.util.List;
 import java.util.ResourceBundle;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import org.anticorruption.application.ConfigManager;
+import org.anticorruption.application.Models.Report;
+import org.anticorruption.application.UserSession;
 
 public class MainController implements Initializable {
+    private final String SERVER_URL = ConfigManager.getProperty("server.url");
 
     @FXML
     private TabPane mainTabPane;
@@ -46,8 +61,9 @@ public class MainController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-// Устанавливаем форматтер для поля времени
         setupTimeField();
+        setupReportsTable();
+        loadReports(); // Загружаем данные при инициализации
     }
 
     public void setupTabs() {
@@ -98,7 +114,7 @@ public class MainController implements Initializable {
             }
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:3000/api/reports"))
+                    .uri(URI.create(SERVER_URL + "/api/reports"))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
@@ -252,4 +268,117 @@ public class MainController implements Initializable {
         evidenceDescriptionArea.clear();
         witnessesField.clear();
     }
+
+    @FXML
+    private TableView<Report> reportsTable;
+    @FXML
+    private TableColumn<Report, Long> idColumn;
+    @FXML
+    private TableColumn<Report, String> statusColumn;
+    @FXML
+    private TableColumn<Report, String> solutionColumn;
+
+    private ObservableList<Report> reportsData = FXCollections.observableArrayList();
+
+
+
+    private void setupReportsTable() {
+        // Настраиваем колонки
+        idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
+        statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
+        solutionColumn.setCellValueFactory(new PropertyValueFactory<>("solution"));
+
+        // Привязываем данные
+        reportsTable.setItems(reportsData);
+
+        // Добавляем обработчик двойного клика
+        reportsTable.setOnMouseClicked(event -> {
+            if(event.getClickCount() == 2) {
+                Report selectedReport = reportsTable.getSelectionModel().getSelectedItem();
+                if(selectedReport != null) {
+                    showReportDetails(selectedReport);
+                }
+            }
+        });
+    }
+
+    @FXML
+    private void refreshReports() {
+        loadReports();
+    }
+
+    private void loadReports() {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(SERVER_URL + "/api/reports"))
+                .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
+                .GET()
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body)
+                .thenAccept(this::handleReportsResponse)
+                .exceptionally(e -> {
+                    Platform.runLater(() ->
+                            showAlert(Alert.AlertType.ERROR, "Ошибка",
+                                    "Ошибка при загрузке данных: " + e.getMessage())
+                    );
+                    return null;
+                });
+    }
+
+    private void handleReportsResponse(String responseBody) {
+        try {
+            JsonNode response = mapper.readTree(responseBody);
+            if ("OK".equals(response.get("status").asText())) {
+                JsonNode dataNode = response.get("data");
+                List<Report> reports = mapper.readValue(
+                        dataNode.toString(),
+                        mapper.getTypeFactory().constructCollectionType(List.class, Report.class)
+                );
+
+                Platform.runLater(() -> {
+                    reportsData.clear();
+                    reportsData.addAll(reports);
+                });
+            } else {
+                Platform.runLater(() ->
+                        showAlert(Alert.AlertType.ERROR, "Ошибка",
+                                response.get("message").asText())
+                );
+            }
+        } catch (Exception e) {
+            Platform.runLater(() ->
+                    showAlert(Alert.AlertType.ERROR, "Ошибка",
+                            "Ошибка при обработке данных: " + e.getMessage())
+            );
+        }
+    }
+    private void showReportDetails(Report report) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/anticorruption/application/report_details.fxml"));
+            Parent root = loader.load();
+
+            ReportDetailsController controller = loader.getController();
+
+            Stage stage = new Stage();
+            // Устанавливаем stage в контроллер
+            controller.setStage(stage);
+            // Устанавливаем report в контроллер
+            controller.setReport(report);
+
+            stage.setTitle("Детали доноса #" + report.getId());
+            stage.setScene(new Scene(root));
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.showAndWait();
+
+            // После закрытия окна обновляем данные
+            loadReports();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Ошибка",
+                    "Ошибка при открытии окна деталей: " + e.getMessage() + "\n" +
+                            "Причина: " + (e.getCause() != null ? e.getCause().getMessage() : "неизвестна"));
+        }
+    }
+
 }

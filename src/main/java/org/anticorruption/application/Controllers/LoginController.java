@@ -1,4 +1,4 @@
-package org.anticorruption.application;
+package org.anticorruption.application.Controllers;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -9,7 +9,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.PasswordField;
 
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -21,6 +20,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.JsonNode;
 import javafx.stage.Stage;
+import org.anticorruption.application.ConfigManager;
+import org.anticorruption.application.UserSession;
 
 public class LoginController {
     @FXML
@@ -28,10 +29,10 @@ public class LoginController {
 
     @FXML
     private PasswordField passwordField;
-    @FXML
 
     private final HttpClient client = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
+    private final String SERVER_URL = ConfigManager.getProperty("server.url");
 
     @FXML
     protected void onLoginButtonClick() {
@@ -44,7 +45,7 @@ public class LoginController {
             requestBody.put("password", password);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:3000/api/auth/login"))
+                    .uri(URI.create(SERVER_URL + "/api/auth/login"))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
                     .build();
@@ -110,7 +111,7 @@ public class LoginController {
 
     private void openMainForm() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("main.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/anticorruption/application/main.fxml"));
             Parent root = loader.load();
 
             MainController controller = loader.getController();

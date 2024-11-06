@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="org.anticorruption.application.Controllers.ReportDetailsController"
+      spacing="10"
+      stylesheets="@styles.css">
+
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <Label text="Дата инцидента:" />
+    <Label fx:id="incidentDateLabel" />
+
+    <Label text="Время инцидента:" />
+    <Label fx:id="incidentTimeLabel" />
+
+    <Label text="Место:" />
+    <Label fx:id="locationLabel" />
+
+    <Label text="Вовлеченные лица:" />
+    <Label fx:id="involvedPersonsLabel" />
+
+    <Label text="Описание:" />
+    <TextArea fx:id="descriptionArea" editable="false" wrapText="true" />
+
+    <Label text="Доказательства:" />
+    <TextArea fx:id="evidenceArea" editable="false" wrapText="true" />
+
+    <Label text="Свидетели:" />
+    <Label fx:id="witnessesLabel" />
+
+    <Label text="Решение:" />
+    <TextArea fx:id="solutionArea" wrapText="true" />
+
+    <HBox spacing="10">
+        <Button text="В работу" onAction="#onTakeToWork" />
+        <Button text="Закрыть заявку" onAction="#onCloseReport" />
+        <Button text="Сохранить" onAction="#onSave" />
+        <Button text="Закрыть" onAction="#onClose" />
+    </HBox>
+</VBox>

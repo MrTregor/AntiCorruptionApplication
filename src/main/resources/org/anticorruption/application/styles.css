@@ -154,3 +154,102 @@
 .date-picker-popup .next-month {
     -fx-text-fill: #808080;
 }
+
+/* Стили для TableView */
+.table-view {
+    -fx-background-color: #2b2b2b;
+    -fx-table-cell-border-color: transparent;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #3c3f41;
+}
+
+.table-view .column-header, .table-view .filler {
+    -fx-background-color: transparent;
+    -fx-size: 35;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-color: #515151;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #a9b7c6;
+    -fx-alignment: center-left;
+}
+
+.table-view .table-cell {
+    -fx-text-fill: #a9b7c6;
+    -fx-alignment: center-left;
+    -fx-padding: 2 0 2 10px;
+}
+
+.table-row-cell {
+    -fx-background-color: #2b2b2b;
+    -fx-table-cell-border-color: transparent;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #323232;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #4B6EAF;
+}
+
+/* Стили для скроллбара в TableView */
+.table-view .scroll-bar:vertical,
+.table-view .scroll-bar:horizontal {
+    -fx-background-color: #2b2b2b;
+}
+
+.table-view .increment-button,
+.table-view .decrement-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.table-view .scroll-bar:vertical .thumb,
+.table-view .scroll-bar:horizontal .thumb {
+    -fx-background-color: #555555;
+}
+
+.table-view .scroll-bar:vertical .thumb:hover,
+.table-view .scroll-bar:horizontal .thumb:hover {
+    -fx-background-color: #666666;
+}
+
+/* Обновленные стили для TabPane */
+.tab-pane > .tab-header-area > .headers-region > .tab {
+    -fx-background-color: #3c3f41;
+    -fx-background-radius: 0;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab:selected {
+    -fx-background-color: #4e5254;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label {
+    -fx-text-fill: #a9b7c6;
+}
+
+.tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: #2b2b2b;
+}
+
+/* Стили для VBox внутри вкладок */
+.tab-pane .tab-content-area {
+    -fx-background-color: #2b2b2b;
+}
+
+.tab-pane .tab-content-area .vbox {
+    -fx-background-color: #2b2b2b;
+}
+
+.button {
+    -fx-min-width: 100px;
+    -fx-padding: 5px 10px;
+}
+
+.button:hover {
+    -fx-cursor: hand;
+}

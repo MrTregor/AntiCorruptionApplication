@@ -10,9 +10,11 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.geometry.Insets?>
 
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TableColumn?>
 <VBox xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="org.anticorruption.application.MainController"
+      fx:controller="org.anticorruption.application.Controllers.MainController"
       spacing="10"
       stylesheets="@styles.css">
     <padding>
@@ -41,7 +43,14 @@
                 <padding>
                     <Insets top="20" right="20" bottom="20" left="20"/>
                 </padding>
-                <Label text="Содержимое вкладки 'Обработка заявок'"/>
+                <TableView fx:id="reportsTable" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="idColumn" text="ID" />
+                        <TableColumn fx:id="statusColumn" text="Статус" />
+                        <TableColumn fx:id="solutionColumn" text="Решение" />
+                    </columns>
+                </TableView>
+                <Button text="Обновить" onAction="#refreshReports"/>
             </VBox>
         </Tab>
 
