@@ -17,9 +17,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -35,6 +37,8 @@ import static org.anticorruption.application.AlertUtils.showAlert;
 
 public class MainController implements Initializable {
     private final String SERVER_URL = ConfigManager.getProperty("server.url");
+    @FXML
+    private TableColumn<Report, String> assignedToColumn;
 
     @FXML
     private TabPane mainTabPane;
@@ -282,6 +286,7 @@ public class MainController implements Initializable {
         idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
         solutionColumn.setCellValueFactory(new PropertyValueFactory<>("solution"));
+        assignedToColumn.setCellValueFactory(new PropertyValueFactory<>("assignedToFullName")); // Здесь мы предполагаем, что в Report есть поле assignedToName
 
         // Привязываем данные
         reportsTable.setItems(reportsData);
@@ -289,10 +294,7 @@ public class MainController implements Initializable {
         // Добавляем обработчик двойного клика
         reportsTable.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) {
-                Report selectedReport = reportsTable.getSelectionModel().getSelectedItem();
-                if (selectedReport != null) {
-                    showReportDetails(selectedReport);
-                }
+                assignAgentToReport(); // Вызываем метод назначения агента
             }
         });
     }
@@ -447,7 +449,7 @@ public class MainController implements Initializable {
                         dataNode.toString(),
                         mapper.getTypeFactory().constructCollectionType(List.class, User.class)
                 );
-                List<User> finalUsers = users.stream().peek(user -> user.setFullName((user.getFirstName() + " " + user.getLastName() + " " + user.getMiddleName()).equals("null null null") ? "" : user.getFirstName() + " " + user.getLastName() + " " + user.getMiddleName())).toList();
+                List<User> finalUsers = users.stream().peek(user -> user.setFullName((user.getFullName()).equals("null null null") ? "" : user.getFirstName() + " " + user.getLastName() + " " + user.getMiddleName())).toList();
                 Platform.runLater(() -> {
                     usersData.clear();
                     usersData.addAll(finalUsers);
@@ -656,6 +658,114 @@ public class MainController implements Initializable {
 
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при подготовке запроса на обновление пароля: " + e.getMessage());
+        }
+    }
+
+    private void loadAgents(Report report) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(SERVER_URL + "/api/users/get-agents"))
+                .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
+                .GET()
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body)
+                .thenAccept(responseBody -> handleAgentsResponse(responseBody, report)) // Передаем отчет в обработчик
+                .exceptionally(e -> {
+                    Platform.runLater(() ->
+                            showAlert(Alert.AlertType.ERROR, "Ошибка",
+                                    "Ошибка при загрузке сотрудников: " + e.getMessage())
+                    );
+                    return null;
+                });
+    }
+
+    private List<User> agents = new ArrayList<>();
+
+    private void handleAgentsResponse(String responseBody, Report report) {
+        try {
+            JsonNode response = mapper.readTree(responseBody);
+            JsonNode dataNode = response.get("data");
+            if (dataNode != null && dataNode.isArray()) {
+                agents = mapper.readValue(
+                        dataNode.toString(),
+                        mapper.getTypeFactory().constructCollectionType(List.class, User.class)
+                );
+
+                // Обновляем диалог выбора агента, передавая отчет
+                Platform.runLater(() -> showAssignAgentDialog(report));
+            }
+        } catch (Exception e) {
+            Platform.runLater(() -> {
+                System.err.println("Ошибка при обработке ответа: " + e.getMessage());
+                showAlert(Alert.AlertType.ERROR, "Ошибка",
+                        "Ошибка при обработке данных: " + e.getMessage());
+            });
+        }
+    }
+
+    private void showAssignAgentDialog(Report report) {
+        ChoiceDialog<User> dialog = new ChoiceDialog<>();
+        dialog.setTitle("Назначить сотрудника");
+        dialog.setHeaderText("Выберите сотрудника для назначения на заявку");
+        dialog.setContentText("Сотрудник:");
+        dialog.getDialogPane().getStylesheets().add(getClass().getResource("/org/anticorruption/application/styles.css").toExternalForm());
+
+        // Фильтруем только агентов с правом решения заявок
+        List<User> filteredAgents = agents.stream()
+                .filter(user -> user.getGroups().stream()
+                        .anyMatch(group -> "SolveReport".equals(group.getName())))
+                .collect(Collectors.toList());
+
+        dialog.getItems().addAll(filteredAgents);
+
+        Optional<User> result = dialog.showAndWait();
+        result.ifPresent(agent -> assignSelectedAgent(report, agent));
+    }
+
+
+    private void assignSelectedAgent(Report report, User agent) {
+        // Назначаем сотрудника на заявку
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(SERVER_URL + "/api/reports/" + report.getId() + "/assign?assignedTo=" + agent.getId()))
+                    .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
+                    .method("PATCH", HttpRequest.BodyPublishers.noBody())
+                    .build();
+
+            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body)
+                    .thenAccept(responseBody -> {
+                        try {
+                            JsonNode response = mapper.readTree(responseBody);
+                            if ("OK".equals(response.get("status").asText())) {
+                                showAlert(Alert.AlertType.INFORMATION, "Успех", "Сотрудник успешно назначен на заявку.");
+                                report.setAssignedToFullName(agent.getFullName()); // Обновляем ФИО назначенного сотрудника
+                                reportsTable.refresh(); // Обновляем таблицу
+                            } else {
+                                showAlert(Alert.AlertType.ERROR, "Ошибка", response.get("message").asText());
+                            }
+                        } catch (Exception e) {
+                            showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при обработке ответа: " + e.getMessage());
+                        }
+                    })
+                    .exceptionally(e -> {
+                        showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при отправке запроса: " + e.getMessage());
+                        return null;
+                    });
+
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при назначении сотрудника: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void assignAgentToReport() {
+        Report selectedReport = reportsTable.getSelectionModel().getSelectedItem();
+        if (selectedReport != null) {
+            loadAgents(selectedReport); // Передаем выбранный отчет в метод загрузки агентов
+        } else {
+            showAlert(Alert.AlertType.WARNING, "Ошибка", "Выберите отчет для назначения агента.");
         }
     }
 }

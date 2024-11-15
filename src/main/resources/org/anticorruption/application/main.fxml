@@ -22,7 +22,7 @@
         <Insets top="20" right="20" bottom="20" left="20"/>
     </padding>
 
-    <Label fx:id="accessMessageLabel" text="" style="-fx-text-fill: red;" /> <!-- Добавьте этот Label -->
+    <Label fx:id="accessMessageLabel" text="" style="-fx-text-fill: red;"/> <!-- Добавьте этот Label -->
 
     <TabPane fx:id="mainTabPane">
         <Tab fx:id="createReportTab" text="Написать донос" closable="false">
@@ -34,8 +34,10 @@
                 <TextField fx:id="incidentTimeField" promptText="Время предполагаемого нарушения"/>
                 <TextField fx:id="incidentLocationField" promptText="Место предполагаемого нарушения"/>
                 <TextField fx:id="involvedPersonsField" promptText="Имена и должности вовлеченных лиц"/>
-                <TextArea fx:id="descriptionArea" promptText="Подробное описание произошедшего инцидента" wrapText="true"/>
-                <TextArea fx:id="evidenceDescriptionArea" promptText="Описание имеющихся доказательств" wrapText="true"/>
+                <TextArea fx:id="descriptionArea" promptText="Подробное описание произошедшего инцидента"
+                          wrapText="true"/>
+                <TextArea fx:id="evidenceDescriptionArea" promptText="Описание имеющихся доказательств"
+                          wrapText="true"/>
                 <TextField fx:id="witnessesField" promptText="Информация о свидетелях"/>
                 <Button text="Отправить" onAction="#onSubmitReport"/>
             </VBox>
@@ -48,12 +50,16 @@
                 </padding>
                 <TableView fx:id="reportsTable" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="idColumn" text="ID" />
-                        <TableColumn fx:id="statusColumn" text="Статус" />
-                        <TableColumn fx:id="solutionColumn" text="Решение" />
+                        <TableColumn fx:id="idColumn" text="ID"/>
+                        <TableColumn fx:id="statusColumn" text="Статус"/>
+                        <TableColumn fx:id="solutionColumn" text="Решение"/>
+                        <TableColumn fx:id="assignedToColumn" minWidth="500" text="Назначенный сотрудник"/>
                     </columns>
                 </TableView>
-                <Button text="Обновить" onAction="#refreshReports"/>
+                <HBox spacing="10">
+                    <Button text="Обновить" onAction="#refreshReports"/>
+                    <Button text="Назначить" onAction="#assignAgentToReport"/>
+                </HBox>
             </VBox>
         </Tab>
 
@@ -64,8 +70,8 @@
                 </padding>
                 <TableView fx:id="usersTable" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="usernameColumn" text="Имя пользователя" />
-                        <TableColumn fx:id="fullNameColumn" minWidth="500" text="ФИО" />
+                        <TableColumn fx:id="usernameColumn" text="Имя пользователя"/>
+                        <TableColumn fx:id="fullNameColumn" minWidth="500" text="ФИО"/>
                     </columns>
                 </TableView>
                 <HBox spacing="10">

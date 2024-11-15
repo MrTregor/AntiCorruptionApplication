@@ -89,5 +89,12 @@ public class User {
 
     // Статус сотрудника
     private Boolean isFired;          // Признак увольнения
+    public String getFullName() {
+        return lastName + " " + firstName + " " + middleName;
+    }
 
+    @Override
+    public String toString() {
+        return this.getFullName();
+    }
 }
