@@ -59,23 +59,6 @@
     -fx-background-color: #45494A;
 }
 
-.date-picker {
-    -fx-background-color: #3c3f41;
-}
-
-.date-picker .arrow-button {
-    -fx-background-color: #3c3f41;
-    -fx-border-color: #323232;
-}
-
-.date-picker .arrow-button:hover {
-    -fx-background-color: #45494A;
-}
-
-.date-picker .text-field {
-    -fx-background-color: #3c3f41;
-    -fx-text-fill: #a9b7c6;
-}
 
 .button {
     -fx-background-color: #4B6EAF;
@@ -124,7 +107,26 @@
     -fx-background-color: #a9b7c6;
 }
 
-/* Стили для календаря в DatePicker */
+/* Основные стили для DatePicker */
+.date-picker {
+    -fx-background-color: #3c3f41;
+}
+
+.date-picker .arrow-button {
+    -fx-background-color: #3c3f41;
+    -fx-border-color: #323232;
+}
+
+.date-picker .arrow-button:hover {
+    -fx-background-color: #45494A;
+}
+
+.date-picker .text-field {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: #a9b7c6;
+}
+
+/* Стили для всплывающего календаря */
 .date-picker-popup {
     -fx-background-color: #3c3f41;
 }
@@ -133,10 +135,22 @@
     -fx-background-color: #3c3f41;
 }
 
+.date-picker-popup .month-year-pane .label {
+    -fx-text-fill: #a9b7c6;
+}
+
 .date-picker-popup .calendar-grid {
     -fx-background-color: #3c3f41;
 }
 
+/* Стили для дней недели */
+.date-picker-popup .week-day-header,
+.date-picker-popup .week-number-cell {
+    -fx-text-fill: #a9b7c6 !important;
+    -fx-background-color: #3c3f41 !important;
+}
+
+/* Стили для дней месяца */
 .date-picker-popup .day-cell {
     -fx-background-color: #3c3f41;
     -fx-text-fill: #a9b7c6;
@@ -146,15 +160,37 @@
     -fx-background-color: #4B6EAF;
 }
 
-.date-picker-popup .selected {
+.date-picker-popup .day-cell:selected {
     -fx-background-color: #4B6EAF;
+    -fx-text-fill: white;
 }
 
+/* Стили для дней других месяцев */
 .date-picker-popup .previous-month,
 .date-picker-popup .next-month {
     -fx-text-fill: #808080;
 }
 
+/* Стили для навигационных кнопок */
+.date-picker-popup .button {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: #a9b7c6;
+}
+
+.date-picker-popup .button:hover {
+    -fx-background-color: #4B6EAF;
+}
+
+/* Стили для стрелок навигации */
+.date-picker-popup .left-button,
+.date-picker-popup .right-button {
+    -fx-background-color: #3c3f41;
+}
+
+.date-picker-popup .left-button:hover,
+.date-picker-popup .right-button:hover {
+    -fx-background-color: #4B6EAF;
+}
 /* Стили для TableView */
 .table-view {
     -fx-background-color: #2b2b2b;
@@ -253,4 +289,188 @@
 .button:hover {
     -fx-cursor: hand;
 }
+
+/* Стили для ListView */
+.list-view {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: #a9b7c6;
+}
+
+.list-view .list-cell {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: #a9b7c6;
+}
+
+.list-view .list-cell:filled:hover {
+    -fx-background-color: #4B6EAF;
+    -fx-text-fill: white;
+}
+
+.list-view .list-cell:selected {
+    -fx-background-color: #4B6EAF;
+    -fx-text-fill: white;
+}
+
+.list-view .scroll-bar {
+    -fx-background-color: #2b2b2b;
+}
+
+.list-view .scroll-bar .thumb {
+    -fx-background-color: #555555;
+    -fx-background-radius: 6;
+}
+
+.list-view .scroll-bar .thumb:hover {
+    -fx-background-color: #666666;
+}
+/* Стили для ComboBox */
+.combo-box {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: #a9b7c6;
+}
+
+.combo-box .list-cell {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: #a9b7c6;
+}
+
+.combo-box .arrow-button {
+    -fx-background-color: #3c3f41;
+}
+
+.combo-box .arrow {
+    -fx-background-color: #a9b7c6;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: #3c3f41;
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: #a9b7c6;
+}
+
+.combo-box-popup .list-view .list-cell:filled:hover {
+    -fx-background-color: #4B6EAF;
+    -fx-text-fill: white;
+}
+
+.combo-box-popup .list-view .list-cell:selected {
+    -fx-background-color: #4B6EAF;
+    -fx-text-fill: white;
+}
+
+/* Стили для CheckBox */
+.check-box {
+    -fx-text-fill: #a9b7c6;
+}
+
+.check-box .box {
+    -fx-background-color: #3c3f41;
+    -fx-border-color: #808080;
+    -fx-border-radius: 3px;
+}
+
+.check-box:selected .box {
+    -fx-background-color: #4B6EAF;
+    -fx-border-color: #4B6EAF;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: white;
+}
+
+.check-box:hover .box {
+    -fx-border-color: #a9b7c6;
+}
+
+.check-box:focused .box {
+    -fx-border-color: #4B6EAF;
+}
+.tab-pane .tab .tab-close-button {
+    visibility: hidden;
+}
+
+/* Стили для Alert */
+.alert {
+    -fx-background-color: #3c3f41; /* Цвет фона */
+    -fx-text-fill: #a9b7c6; /* Цвет текста */
+}
+
+.alert .dialog-pane {
+    -fx-background-color: #3c3f41; /* Цвет фона диалогового окна */
+    -fx-border-color: #515151; /* Цвет границы */
+    -fx-border-radius: 5; /* Радиус границы */
+}
+
+.alert .header-panel {
+    -fx-background-color: #4e5254; /* Цвет фона заголовка */
+}
+
+.alert .header-panel .label {
+    -fx-text-fill: #a9b7c6; /* Цвет текста заголовка */
+}
+
+.alert .content {
+    -fx-text-fill: #a9b7c6; /* Цвет текста содержимого */
+}
+
+.alert .button {
+    -fx-background-color: #4B6EAF; /* Цвет кнопок */
+    -fx-text-fill: white; /* Цвет текста кнопок */
+    -fx-padding: 5 10; /* Отступы кнопок */
+}
+
+.alert .button:hover {
+    -fx-background-color: #537BC2; /* Цвет кнопок при наведении */
+}
+
+.alert .button:pressed {
+    -fx-background-color: #3d5a8c; /* Цвет кнопок при нажатии */
+}
+/* Стили для TextInputDialog */
+.dialog-pane {
+    -fx-background-color: #3c3f41; /* Цвет фона */
+    -fx-border-color: #515151; /* Цвет границы */
+    -fx-border-radius: 5; /* Радиус границы */
+}
+
+.dialog-pane .header {
+    -fx-background-color: #3c3f41; /* Цвет фона заголовка */
+}
+
+.dialog-pane .header-panel {
+    -fx-background-color: #3c3f41; /* Цвет фона панели заголовка */
+}
+
+.dialog-pane .header .label {
+    -fx-text-fill: #a9b7c6; /* Цвет текста заголовка */
+    -fx-background-color: transparent; /* Прозрачный фон */
+}
+
+.dialog-pane .content {
+    -fx-background-color: #3c3f41; /* Цвет фона содержимого */
+    -fx-text-fill: #a9b7c6; /* Цвет текста содержимого */
+}
+
+.dialog-pane .text-input {
+    -fx-background-color: #3c3f41; /* Цвет фона текстового поля */
+    -fx-text-fill: #a9b7c6; /* Цвет текста текстового поля */
+    -fx-border-color: #323232; /* Цвет границы текстового поля */
+}
+
+.dialog-pane .text-input:focused {
+    -fx-border-color: #4B6EAF; /* Цвет границы при фокусе */
+}
+
+.dialog-pane .button {
+    -fx-background-color: #4B6EAF; /* Цвет кнопок */
+    -fx-text-fill: white; /* Цвет текста кнопок */
+}
+
+.dialog-pane .button:hover {
+    -fx-background-color: #537BC2; /* Цвет кнопок при наведении */
+}
+
 

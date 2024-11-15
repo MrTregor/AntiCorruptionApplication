@@ -18,6 +18,7 @@ public class Report {
     private String witnesses;
     private String status;
     private String assignedTo;
+    private String assignedToFullName;
     private String lastUpdated;
     private String solution;
 

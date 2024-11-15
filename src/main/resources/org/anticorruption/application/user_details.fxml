@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="org.anticorruption.application.Controllers.UserDetailsController"
+      spacing="10"
+      stylesheets="@styles.css"
+      style="-fx-padding: 20;">
+
+    <TabPane VBox.vgrow="ALWAYS" fx:id="tabPane">
+        <Tab text="Основная информация">
+            <GridPane hgap="10" vgap="10">
+                <Label text="Логин:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                <TextField fx:id="usernameField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                <Label text="Фамилия:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                <TextField fx:id="lastNameField" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                <Label text="Имя:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                <TextField fx:id="firstNameField" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                <Label text="Отчество:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                <TextField fx:id="middleNameField" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+
+                <Label text="Дата рождения:" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                <DatePicker fx:id="dateOfBirthPicker" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+
+                <Label text="Пол:" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+                <ComboBox fx:id="genderComboBox" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="Паспортные данные">
+            <GridPane hgap="10" vgap="10">
+                <Label text="Серия паспорта:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                <TextField fx:id="passportSeriesField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                <Label text="Номер паспорта:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                <TextField fx:id="passportNumberField" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="Контактная информация">
+            <GridPane hgap="10" vgap="10">
+                <Label text="Email:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                <TextField fx:id="emailField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                <Label text="Телефон:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                <TextField fx:id="phoneNumberField" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                <Label text="Адрес:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                <TextField fx:id="addressField" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="Рабочая информация">
+            <GridPane hgap="10" vgap="10">
+                <Label text="Табельный номер:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                <TextField fx:id="employeeIdField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                <Label text="Должность:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                <TextField fx:id="positionField" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                <Label text="Отдел:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                <TextField fx:id="departmentField" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                <Label text="Дата найма:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                <DatePicker fx:id="hireDatePicker" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+
+                <Label text="Тип контракта:" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                <TextField fx:id="contractTypeField" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+
+                <Label text="Зарплата:" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                <TextField fx:id="salaryField" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+
+                <Label text="Уволен:" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+                <CheckBox fx:id="isFiredCheckBox" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="Образование и квалификация">
+            <GridPane hgap="10" vgap="10">
+                <Label text="Образование:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                <TextArea fx:id="educationArea" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                <Label text="Опыт работы:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                <TextArea fx:id="workExperienceArea" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                <Label text="Профессиональные навыки:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                <TextArea fx:id="skillsArea" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="Личная информация">
+            <GridPane hgap="10" vgap="10">
+                <Label text="Семейное положение:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                <TextField fx:id="maritalStatusField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                <Label text="Количество детей:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                <TextField fx:id="numberOfChildren" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                <Label text="Воинский учет:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                <TextField fx:id="militaryServiceInfoField" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="Документы">
+            <GridPane hgap="10" vgap="10">
+                <Label text="ИНН:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                <TextField fx:id="innField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                <Label text="СНИЛС:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                <TextField fx:id="snilsField" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="Профессиональное развитие">
+            <GridPane hgap="10" vgap="10">
+                <Label text="Повышение квалификации:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                <TextArea fx:id="qualificationUpgradeArea" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                <Label text="Награды:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                <TextArea fx:id="awardsArea" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                <Label text="Дисциплинарные взыскания:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                <TextArea fx:id="disciplinaryActionsArea" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                <Label text="Результаты аттестаций:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                <TextArea fx:id="attestationResultsArea" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="Дополнительная информация">
+            <GridPane hgap="10" vgap="10">
+                <Label text="Результаты медосмотров:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                <TextArea fx:id="medicalExamResultsArea" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                <Label text="Банковские реквизиты:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                <TextArea fx:id="bankDetailsArea" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                <Label text="Контакты для экстренной связи:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                <TextArea fx:id="emergencyContactArea" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                <Label text="Примечания:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                <TextArea fx:id="notesArea" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+            </GridPane>
+        </Tab>
+        <Tab text="Группы доступа">
+            <VBox spacing="10">
+                <HBox spacing="10">
+                    <ComboBox fx:id="availableGroupsComboBox" HBox.hgrow="ALWAYS"/>
+                    <Button text="Добавить" fx:id="addGroupButton"/>
+                    <Button text="Удалить" fx:id="removeGroupButton"/>
+                </HBox>
+                <ListView fx:id="groupsListView" VBox.vgrow="ALWAYS"/>
+            </VBox>
+        </Tab>
+    </TabPane>
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="Сохранить"
+                fx:id="saveButton"
+                onAction="#onSave"/>
+        <Button text="Отмена"
+                fx:id="cancelButton"
+                onAction="#onCancel"/>
+    </HBox>
+</VBox>

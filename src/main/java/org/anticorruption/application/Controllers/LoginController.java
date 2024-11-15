@@ -1,12 +1,13 @@
 package org.anticorruption.application.Controllers;
 
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.TextField;
-import javafx.scene.control.PasswordField;
+import javafx.scene.control.*;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -19,9 +20,15 @@ import java.util.List;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.JsonNode;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.anticorruption.application.ConfigManager;
 import org.anticorruption.application.UserSession;
+
+import static org.anticorruption.application.AlertUtils.showAlert;
 
 public class LoginController {
     @FXML
@@ -30,12 +37,17 @@ public class LoginController {
     @FXML
     private PasswordField passwordField;
 
+    @FXML
+    private Pane root; // Добавьте это поле
+
+    private Stage stage; // Добавьте это поле
+
     private final HttpClient client = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
     private final String SERVER_URL = ConfigManager.getProperty("server.url");
 
     @FXML
-    protected void onLoginButtonClick() {
+    protected void onLoginButtonClick(ActionEvent event) {
         String username = usernameField.getText();
         String password = passwordField.getText();
 
@@ -50,10 +62,13 @@ public class LoginController {
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
                     .build();
 
-            // Отправляем запрос асинхронно
+            // Store the event source for later use
+            Node source = (Node) event.getSource();
+            stage = (Stage) source.getScene().getWindow();
+
             client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(HttpResponse::body)
-                    .thenAccept(this::handleResponse)
+                    .thenAccept(response -> handleResponse(response, stage))
                     .exceptionally(e -> {
                         System.err.println("Ошибка при отправке запроса: " + e.getMessage());
                         return null;
@@ -64,7 +79,8 @@ public class LoginController {
         }
     }
 
-    private void handleResponse(String responseBody) {
+    // Modified to accept Stage parameter
+    private void handleResponse(String responseBody, Stage stage) {
         try {
             JsonNode response = mapper.readTree(responseBody);
             System.out.printf("response: %s\n", response.toString());
@@ -98,18 +114,21 @@ public class LoginController {
                 System.out.println("Группы доступа: " + groups);
                 System.out.println("Username: " + username);
 
-                // Переход на главную форму в основном потоке
-                Platform.runLater(this::openMainForm);
+                // Pass the stage to openMainForm
+                Platform.runLater(() -> openMainForm(stage));
 
             } else {
-                System.err.println("Ошибка авторизации: " + response.get("message").asText());
+                String errorMessage = response.get("message").asText();
+                System.err.println("Ошибка авторизации: " + errorMessage);
+                Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Ошибка авторизации", errorMessage)); // Показать ошибку
             }
         } catch (Exception e) {
             System.err.println("Ошибка при обработке ответа: " + e.getMessage());
         }
     }
 
-    private void openMainForm() {
+    // Modified to accept Stage parameter
+    private void openMainForm(Stage stage) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/anticorruption/application/main.fxml"));
             Parent root = loader.load();
@@ -117,7 +136,6 @@ public class LoginController {
             MainController controller = loader.getController();
             controller.setupTabs();
 
-            Stage stage = (Stage) usernameField.getScene().getWindow();
             Scene scene = new Scene(root);
             stage.setScene(scene);
             stage.setTitle("Главная форма");
@@ -126,5 +144,38 @@ public class LoginController {
             System.err.println("Ошибка при открытии главной формы: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+    @FXML
+    private void initialize() {
+        // Создаем кастомный заголовок
+        HBox titleBar = new HBox();
+        titleBar.setStyle("-fx-background-color: #3c3f41; -fx-padding: 5;"); // Цвет заголовка
+        titleBar.setPrefHeight(30);
+
+        Label titleLabel = new Label("Вход");
+        titleLabel.setTextFill(Color.WHITE); // Цвет текста заголовка
+
+        Region spacer = new Region(); // Используем Region вместо Spacer
+        HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+
+        Button closeButton = new Button("X");
+        closeButton.setStyle("-fx-background-color: transparent; -fx-text-fill: white;");
+        closeButton.setOnAction(e -> {
+            if (stage != null) {
+                stage.close();
+            }
+        });
+
+        titleBar.getChildren().addAll(titleLabel, spacer, closeButton);
+
+        // Проверяем, что root не null перед добавлением
+        if (root != null) {
+            root.getChildren().add(0, titleBar); // Добавляем заголовок в корень
+        }
+    }
+
+    // Метод для установки stage извне, если потребуется
+    public void setStage(Stage stage) {
+        this.stage = stage;
     }
 }

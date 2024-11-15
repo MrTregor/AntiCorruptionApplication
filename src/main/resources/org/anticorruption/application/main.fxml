@@ -12,14 +12,17 @@
 
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.layout.HBox?>
 <VBox xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="org.anticorruption.application.Controllers.MainController"
-      spacing="10"
+      spacing="10" minWidth="300"
       stylesheets="@styles.css">
     <padding>
         <Insets top="20" right="20" bottom="20" left="20"/>
     </padding>
+
+    <Label fx:id="accessMessageLabel" text="" style="-fx-text-fill: red;" /> <!-- Добавьте этот Label -->
 
     <TabPane fx:id="mainTabPane">
         <Tab fx:id="createReportTab" text="Написать донос" closable="false">
@@ -59,7 +62,19 @@
                 <padding>
                     <Insets top="20" right="20" bottom="20" left="20"/>
                 </padding>
-                <Label text="Содержимое вкладки 'Администрирование'"/>
+                <TableView fx:id="usersTable" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="usernameColumn" text="Имя пользователя" />
+                        <TableColumn fx:id="fullNameColumn" minWidth="500" text="ФИО" />
+                    </columns>
+                </TableView>
+                <HBox spacing="10">
+                    <Button text="Обновить" onAction="#refreshUsers"/>
+                    <Button text="Редактировать" onAction="#editUser"/>
+                    <Button text="Добавить сотрудника" onAction="#addUser"/>
+                    <Button text="Удалить пользователя" onAction="#deleteUser"/>
+                    <Button text="Обновить пароль" onAction="#updatePassword"/>
+                </HBox>
             </VBox>
         </Tab>
     </TabPane>

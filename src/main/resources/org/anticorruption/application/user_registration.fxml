@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="org.anticorruption.application.Controllers.UserRegistrationController"
+      spacing="10"
+      stylesheets="@styles.css"
+      style="-fx-padding: 20;">
+
+    <Label text="Имя пользователя:"/>
+    <TextField fx:id="usernameField"/>
+
+    <Label text="Пароль:"/>
+    <PasswordField fx:id="passwordField"/>
+
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="Зарегистрироваться" onAction="#onRegister"/>
+        <Button text="Отмена" onAction="#onCancel"/>
+    </HBox>
+</VBox>

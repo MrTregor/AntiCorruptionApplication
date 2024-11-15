@@ -18,6 +18,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,7 +28,10 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.anticorruption.application.ConfigManager;
 import org.anticorruption.application.Models.Report;
+import org.anticorruption.application.Models.User;
 import org.anticorruption.application.UserSession;
+
+import static org.anticorruption.application.AlertUtils.showAlert;
 
 public class MainController implements Initializable {
     private final String SERVER_URL = ConfigManager.getProperty("server.url");
@@ -63,8 +67,11 @@ public class MainController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         setupTimeField();
         setupReportsTable();
+        setupUsersTable(); // Добавьте этот метод
         loadReports(); // Загружаем данные при инициализации
+        loadUsers(); // Загружаем пользователей при инициализации
     }
+
 
     public void setupTabs() {
         try {
@@ -248,17 +255,6 @@ public class MainController implements Initializable {
         }
     }
 
-    private void showAlert(Alert.AlertType alertType, String title, String content) {
-        // Запускаем в UI потоке
-        javafx.application.Platform.runLater(() -> {
-            Alert alert = new Alert(alertType);
-            alert.setTitle(title);
-            alert.setHeaderText(null);
-            alert.setContentText(content);
-            alert.showAndWait();
-        });
-    }
-
     private void clearReportForm() {
         incidentDatePicker.setValue(null);
         incidentTimeField.clear();
@@ -281,7 +277,6 @@ public class MainController implements Initializable {
     private ObservableList<Report> reportsData = FXCollections.observableArrayList();
 
 
-
     private void setupReportsTable() {
         // Настраиваем колонки
         idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
@@ -293,9 +288,9 @@ public class MainController implements Initializable {
 
         // Добавляем обработчик двойного клика
         reportsTable.setOnMouseClicked(event -> {
-            if(event.getClickCount() == 2) {
+            if (event.getClickCount() == 2) {
                 Report selectedReport = reportsTable.getSelectionModel().getSelectedItem();
-                if(selectedReport != null) {
+                if (selectedReport != null) {
                     showReportDetails(selectedReport);
                 }
             }
@@ -326,33 +321,67 @@ public class MainController implements Initializable {
                 });
     }
 
+    @FXML
+    private Label accessMessageLabel; // Добавьте это поле
+
     private void handleReportsResponse(String responseBody) {
         try {
             JsonNode response = mapper.readTree(responseBody);
-            if ("OK".equals(response.get("status").asText())) {
-                JsonNode dataNode = response.get("data");
-                List<Report> reports = mapper.readValue(
-                        dataNode.toString(),
-                        mapper.getTypeFactory().constructCollectionType(List.class, Report.class)
-                );
 
-                Platform.runLater(() -> {
-                    reportsData.clear();
-                    reportsData.addAll(reports);
-                });
-            } else {
+            // Добавим проверку на null перед вызовом asText()
+            JsonNode statusNode = response.get("status");
+            if (statusNode == null) {
                 Platform.runLater(() ->
                         showAlert(Alert.AlertType.ERROR, "Ошибка",
-                                response.get("message").asText())
+                                "Некорректный ответ сервера: отсутствует статус")
+                );
+                return;
+            }
+
+            // Проверяем статус с безопасным получением текста
+            String status = statusNode.asText("");
+            if ("OK".equals(status)) {
+                JsonNode dataNode = response.get("data");
+                if (dataNode != null && dataNode.isArray()) {
+                    List<Report> reports = mapper.readValue(
+                            dataNode.toString(),
+                            mapper.getTypeFactory().constructCollectionType(List.class, Report.class)
+                    );
+
+                    Platform.runLater(() -> {
+                        reportsData.clear();
+                        reportsData.addAll(reports);
+                        accessMessageLabel.setText(""); // Скрываем сообщение
+                    });
+                } else {
+                    Platform.runLater(() ->
+                            showAlert(Alert.AlertType.ERROR, "Ошибка",
+                                    response.get("message").asText())
+                    );
+                }
+            } else if ("UNAUTHORIZED".equals(status)) {
+                // Обработка статуса UNAUTHORIZED
+                Platform.runLater(() -> {
+                    accessMessageLabel.setText("Запросите у администратора доступ.");
+                });
+            } else {
+                // Безопасное получение сообщения об ошибке
+                JsonNode messageNode = response.get("message");
+                String errorMessage = messageNode != null ? messageNode.asText("Неизвестная ошибка") : "Неизвестная ошибка";
+
+                Platform.runLater(() ->
+                        showAlert(Alert.AlertType.ERROR, "Ошибка", errorMessage)
                 );
             }
         } catch (Exception e) {
-            Platform.runLater(() ->
-                    showAlert(Alert.AlertType.ERROR, "Ошибка",
-                            "Ошибка при обработке данных: " + e.getMessage())
-            );
+            Platform.runLater(() -> {
+                System.err.println("Ошибка при обработке ответа: " + e.getMessage());
+                showAlert(Alert.AlertType.ERROR, "Ошибка",
+                        "Ошибка при обработке данных: " + e.getMessage());
+            });
         }
     }
+
     private void showReportDetails(Report report) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/anticorruption/application/report_details.fxml"));
@@ -381,4 +410,252 @@ public class MainController implements Initializable {
         }
     }
 
+    @FXML
+    private TableView<User> usersTable; // Добавьте это поле
+    @FXML
+    private TableColumn<User, String> usernameColumn; // Колонка для UserName
+    @FXML
+    private TableColumn<User, String> fullNameColumn; // Колонка для ФИО
+
+    private ObservableList<User> usersData = FXCollections.observableArrayList(); // Данные пользователей
+
+    private void loadUsers() {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(SERVER_URL + "/api/users"))
+                .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
+                .GET()
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body)
+                .thenAccept(this::handleUsersResponse)
+                .exceptionally(e -> {
+                    Platform.runLater(() ->
+                            showAlert(Alert.AlertType.ERROR, "Ошибка",
+                                    "Ошибка при загрузке пользователей: " + e.getMessage())
+                    );
+                    return null;
+                });
+    }
+
+    private void handleUsersResponse(String responseBody) {
+        try {
+            JsonNode response = mapper.readTree(responseBody);
+            JsonNode dataNode = response.get("data");
+            if (dataNode != null && dataNode.isArray()) {
+                List<User> users = mapper.readValue(
+                        dataNode.toString(),
+                        mapper.getTypeFactory().constructCollectionType(List.class, User.class)
+                );
+                List<User> finalUsers = users.stream().peek(user -> user.setFullName((user.getFirstName() + " " + user.getLastName() + " " + user.getMiddleName()).equals("null null null") ? "" : user.getFirstName() + " " + user.getLastName() + " " + user.getMiddleName())).toList();
+                Platform.runLater(() -> {
+                    usersData.clear();
+                    usersData.addAll(finalUsers);
+                    usersTable.setItems(usersData);
+                });
+            }
+        } catch (Exception e) {
+            Platform.runLater(() -> {
+                System.err.println("Ошибка при обработке ответа: " + e.getMessage());
+                showAlert(Alert.AlertType.ERROR, "Ошибка",
+                        "Ошибка при обработке данных: " + e.getMessage());
+            });
+        }
+    }
+
+
+    private void setupUsersTable() {
+        // Настраиваем колонки
+        usernameColumn.setCellValueFactory(new PropertyValueFactory<>("username"));
+        fullNameColumn.setCellValueFactory(new PropertyValueFactory<>("fullName"));
+
+        // Привязываем данные
+        usersTable.setItems(usersData);
+
+        // Добавляем обработчик двойного клика (если нужен)
+        usersTable.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                User selectedUser = usersTable.getSelectionModel().getSelectedItem();
+                if (selectedUser != null) {
+                    editUser();
+                }
+            }
+        });
+    }
+
+
+    @FXML
+    private void editUser() {
+        User selectedUser = usersTable.getSelectionModel().getSelectedItem();
+        if (selectedUser != null) {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/anticorruption/application/user_details.fxml"));
+                Parent root = loader.load();
+
+                UserDetailsController controller = loader.getController();
+                controller.setUser(selectedUser); // Передаем выбранного пользователя контроллеру
+
+                Stage stage = new Stage();
+                controller.setDialogStage(stage);
+                stage.setTitle("Редактирование пользователя");
+                stage.setScene(new Scene(root));
+                stage.initModality(Modality.APPLICATION_MODAL);
+                stage.showAndWait();
+
+
+                // После закрытия окна обновляем данные
+                loadUsers();
+            } catch (IOException e) {
+                e.printStackTrace();
+                showAlert(Alert.AlertType.ERROR, "Ошибка",
+                        "Ошибка при открытии окна редактирования: " + e.getMessage());
+            }
+        } else {
+            showAlert(Alert.AlertType.WARNING, "Ошибка", "Выберите пользователя для редактирования.");
+        }
+    }
+
+    @FXML
+    private void refreshUsers() {
+        loadUsers(); // Загружаем пользователей заново
+    }
+
+    @FXML
+    private void deleteUser() {
+        // Получаем выбранного пользователя из таблицы
+        User selectedUser = usersTable.getSelectionModel().getSelectedItem();
+
+        if (selectedUser == null) {
+            showAlert(Alert.AlertType.WARNING, "Внимание", "Выберите пользователя для удаления.");
+            return;
+        }
+
+        // Показываем диалог подтверждения
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Подтверждение удаления");
+        confirmAlert.setHeaderText(null);
+        confirmAlert.setContentText("Вы уверены, что хотите удалить пользователя " + selectedUser.getUsername() + "?");
+
+        Optional<ButtonType> result = confirmAlert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            // Выполняем удаление
+            deleteUserFromServer(selectedUser);
+        }
+    }
+
+    private void deleteUserFromServer(User user) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(SERVER_URL + "/api/users/delete/" + user.getId()))
+                    .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
+                    .DELETE()
+                    .build();
+
+            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenAccept(response -> {
+                        Platform.runLater(() -> {
+                            if (response.statusCode() == 200) {
+                                // Успешное удаление
+                                showAlert(Alert.AlertType.INFORMATION, "Успех",
+                                        "Пользователь " + user.getUsername() + " успешно удален.");
+
+                                // Обновляем список пользователей
+                                loadUsers();
+                            } else {
+                                // Ошибка при удалении
+                                showAlert(Alert.AlertType.ERROR, "Ошибка",
+                                        "Не удалось удалить пользователя. Код ответа: " + response.statusCode());
+                            }
+                        });
+                    })
+                    .exceptionally(ex -> {
+                        Platform.runLater(() -> {
+                            showAlert(Alert.AlertType.ERROR, "Ошибка",
+                                    "Ошибка при удалении пользователя: " + ex.getMessage());
+                        });
+                        return null;
+                    });
+
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "Ошибка",
+                    "Ошибка при подготовке запроса на удаление: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void addUser() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/anticorruption/application/user_registration.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = new Stage();
+            stage.setTitle("Регистрация пользователя");
+            stage.setScene(new Scene(root));
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.showAndWait();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при открытии окна регистрации: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void updatePassword() {
+        User selectedUser = usersTable.getSelectionModel().getSelectedItem();
+
+        if (selectedUser == null) {
+            showAlert(Alert.AlertType.WARNING, "Внимание", "Выберите пользователя для обновления пароля.");
+            return;
+        }
+
+        // Открываем форму для ввода нового пароля
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Обновить пароль");
+        dialog.setHeaderText("Введите новый пароль для пользователя: " + selectedUser.getUsername());
+        dialog.setContentText("Новый пароль:");
+        // Применяем CSS стиль
+        dialog.getDialogPane().getStylesheets().add(getClass().getResource("/org/anticorruption/application/styles.css").toExternalForm());
+
+        // Получаем новый пароль
+        Optional<String> result = dialog.showAndWait();
+
+        result.ifPresent(newPassword -> {
+            updateUserPassword(selectedUser.getId(), newPassword);
+        });
+    }
+
+    private void updateUserPassword(Long userId, String newPassword) {
+        try {
+            // Создаем JSON-объект с новым паролем
+            ObjectNode requestBody = mapper.createObjectNode();
+            requestBody.put("newPassword", newPassword);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(SERVER_URL + "/api/auth/update-password/" + userId))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
+                    .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
+                    .build();
+
+            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenAccept(response -> {
+                        Platform.runLater(() -> {
+                            if (response.statusCode() == 200) {
+                                showAlert(Alert.AlertType.INFORMATION, "Успех", "Пароль успешно обновлен.");
+                            } else {
+                                showAlert(Alert.AlertType.ERROR, "Ошибка", "Не удалось обновить пароль. Код ответа: " + response.statusCode());
+                            }
+                        });
+                    })
+                    .exceptionally(ex -> {
+                        Platform.runLater(() -> {
+                            showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при обновлении пароля: " + ex.getMessage());
+                        });
+                        return null;
+                    });
+
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при подготовке запроса на обновление пароля: " + e.getMessage());
+        }
+    }
 }
