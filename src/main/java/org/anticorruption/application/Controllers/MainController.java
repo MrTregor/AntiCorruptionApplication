@@ -13,14 +13,13 @@ import javafx.scene.control.*;
 
 import java.io.IOException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,7 +27,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.StringConverter;
+import org.anticorruption.application.AntiCorruptionApplication;
 import org.anticorruption.application.ConfigManager;
+import org.anticorruption.application.HttpsClient;
 import org.anticorruption.application.Models.Report;
 import org.anticorruption.application.Models.User;
 import org.anticorruption.application.UserSession;
@@ -37,6 +39,12 @@ import static org.anticorruption.application.AlertUtils.showAlert;
 
 public class MainController implements Initializable {
     private final String SERVER_URL = ConfigManager.getProperty("server.url");
+    @FXML
+    public Button assignButton;
+    @FXML
+    public Button logoutButton;
+    @FXML
+    public Button aboutAuthorButton;
     @FXML
     private TableColumn<Report, String> assignedToColumn;
 
@@ -71,11 +79,13 @@ public class MainController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         setupTimeField();
         setupReportsTable();
+        setupFilterComponents();
+        loadAgentsForFilter();
         setupUsersTable(); // Добавьте этот метод
         loadReports(); // Загружаем данные при инициализации
         loadUsers(); // Загружаем пользователей при инициализации
-    }
 
+    }
 
     public void setupTabs() {
         try {
@@ -86,10 +96,19 @@ public class MainController implements Initializable {
             adminTab.setDisable(!userSession.hasGroup("ManageUserGroups"));
 
             mainTabPane.getTabs().removeIf(Tab::isDisable);
+
+            if (!isUserHasTabGroups(userSession)) {
+                Platform.runLater(() -> accessMessageLabel.setText("Запросите у администратора доступ."));
+            }
+
         } catch (Exception e) {
             System.err.println("Error in setupTabs: " + e.getMessage());
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
+    }
+
+    private static boolean isUserHasTabGroups(UserSession userSession) {
+        return userSession.hasGroup("CreateReport") || userSession.hasGroup("ViewReport") || userSession.hasGroup("ManageUserGroups");
     }
 
     @FXML
@@ -124,19 +143,11 @@ public class MainController implements Initializable {
                 return;
             }
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(SERVER_URL + "/api/reports"))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                    .build();
-            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenApply(HttpResponse::body)
-                    .thenAccept(this::handleReportResponse)
-                    .exceptionally(e -> {
-                        System.err.println("Ошибка при отправке доноса: " + e.getMessage());
-                        return null;
-                    });
+            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(SERVER_URL + "/api/reports")).header("Content-Type", "application/json").header("Authorization", "Bearer " + UserSession.getInstance().getToken()).POST(HttpRequest.BodyPublishers.ofString(requestBody.toString())).build();
+            HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body).thenAccept(this::handleReportResponse).exceptionally(e -> {
+                System.err.println("Ошибка при отправке доноса: " + e.getMessage());
+                return null;
+            });
 
         } catch (Exception e) {
             System.err.println("Ошибка: " + e.getMessage());
@@ -194,8 +205,7 @@ public class MainController implements Initializable {
         String time = incidentTimeField.getText();
 
         if (!time.isEmpty() && !time.matches(timePattern)) {
-            showAlert(Alert.AlertType.WARNING, "Неверный формат",
-                    "Пожалуйста, введите время в формате ЧЧ:ММ (например, 09:30 или 14:45)");
+            showAlert(Alert.AlertType.WARNING, "Неверный формат", "Пожалуйста, введите время в формате ЧЧ:ММ (например, 09:30 или 14:45)");
             incidentTimeField.requestFocus();
         }
     }
@@ -207,10 +217,8 @@ public class MainController implements Initializable {
             return false;
         }
 
-        if (incidentTimeField.getText().isEmpty() ||
-                !incidentTimeField.getText().matches("^([01]?[0-9]|2[0-3]):[0-5][0-9]$")) {
-            showAlert(Alert.AlertType.WARNING, "Ошибка валидации",
-                    "Введите корректное время в формате ЧЧ:ММ");
+        if (incidentTimeField.getText().isEmpty() || !incidentTimeField.getText().matches("^([01]?[0-9]|2[0-3]):[0-5][0-9]$")) {
+            showAlert(Alert.AlertType.WARNING, "Ошибка валидации", "Введите корректное время в формате ЧЧ:ММ");
             return false;
         }
 
@@ -247,15 +255,12 @@ public class MainController implements Initializable {
                 showAlert(Alert.AlertType.INFORMATION, "Успех", "Донос успешно отправлен");
                 clearReportForm();
             } else {
-                String errorMessage = messageNode != null ?
-                        messageNode.asText() :
-                        "Неизвестная ошибка при отправке доноса";
+                String errorMessage = messageNode != null ? messageNode.asText() : "Неизвестная ошибка при отправке доноса";
                 showAlert(Alert.AlertType.ERROR, "Ошибка", errorMessage);
             }
         } catch (Exception e) {
             System.err.println("Ошибка при обработке ответа: " + e.getMessage());
-            showAlert(Alert.AlertType.ERROR, "Ошибка",
-                    "Произошла ошибка при обработке ответа от сервера: " + e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Ошибка", "Произошла ошибка при обработке ответа от сервера: " + e.getMessage());
         }
     }
 
@@ -278,15 +283,24 @@ public class MainController implements Initializable {
     @FXML
     private TableColumn<Report, String> solutionColumn;
 
-    private ObservableList<Report> reportsData = FXCollections.observableArrayList();
-
+    private final ObservableList<Report> reportsData = FXCollections.observableArrayList();
 
     private void setupReportsTable() {
         // Настраиваем колонки
         idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
         solutionColumn.setCellValueFactory(new PropertyValueFactory<>("solution"));
-        assignedToColumn.setCellValueFactory(new PropertyValueFactory<>("assignedToFullName")); // Здесь мы предполагаем, что в Report есть поле assignedToName
+
+        UserSession userSession = UserSession.getInstance();
+
+        if (userSession.hasGroup("AssignProcessReport")) {
+            assignedToColumn.setCellValueFactory(new PropertyValueFactory<>("assignedToFullName"));
+        } else {
+            assignedToColumn.setVisible(false);
+        }
+
+        assignButton.setVisible(userSession.hasGroup("AssignProcessReport"));
+        assignButton.setManaged(userSession.hasGroup("AssignProcessReport"));
 
         // Привязываем данные
         reportsTable.setItems(reportsData);
@@ -294,9 +308,35 @@ public class MainController implements Initializable {
         // Добавляем обработчик двойного клика
         reportsTable.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) {
-                assignAgentToReport(); // Вызываем метод назначения агента
+                Report selectedReport = reportsTable.getSelectionModel().getSelectedItem();
+                if (selectedReport != null) {
+                    showReportDetails(selectedReport);
+                }
             }
         });
+    }
+
+    @FXML
+    private void onLogout() {
+        // Очистите сессию пользователя
+        UserSession.getInstance().clear();
+
+        // Переключите сцену на экран входа
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/org/anticorruption/application/login-view.fxml")); // Укажите правильный путь к FXML
+            Stage stage = (Stage) mainTabPane.getScene().getWindow(); // Получите текущую сцену
+
+            Scene scene = new Scene(fxmlLoader.load(), 300, 400);
+            scene.getStylesheets().add(Objects.requireNonNull(AntiCorruptionApplication.class.getResource("styles.css")).toExternalForm());
+            stage.setTitle("Вход в систему");
+
+            stage.setScene(scene);
+            stage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace(System.err);
+            showAlert(Alert.AlertType.ERROR, "Ошибка", "Не удалось загрузить экран входа.");
+        }
     }
 
     @FXML
@@ -305,22 +345,12 @@ public class MainController implements Initializable {
     }
 
     private void loadReports() {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(SERVER_URL + "/api/reports"))
-                .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
-                .GET()
-                .build();
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(SERVER_URL + "/api/reports")).header("Authorization", "Bearer " + UserSession.getInstance().getToken()).GET().build();
 
-        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApply(HttpResponse::body)
-                .thenAccept(this::handleReportsResponse)
-                .exceptionally(e -> {
-                    Platform.runLater(() ->
-                            showAlert(Alert.AlertType.ERROR, "Ошибка",
-                                    "Ошибка при загрузке данных: " + e.getMessage())
-                    );
-                    return null;
-                });
+        HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body).thenAccept(this::handleReportsResponse).exceptionally(e -> {
+            Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при загрузке данных: " + e.getMessage()));
+            return null;
+        });
     }
 
     @FXML
@@ -329,14 +359,11 @@ public class MainController implements Initializable {
     private void handleReportsResponse(String responseBody) {
         try {
             JsonNode response = mapper.readTree(responseBody);
-
+            System.out.printf("responseBody=%s\n", responseBody);
             // Добавим проверку на null перед вызовом asText()
             JsonNode statusNode = response.get("status");
             if (statusNode == null) {
-                Platform.runLater(() ->
-                        showAlert(Alert.AlertType.ERROR, "Ошибка",
-                                "Некорректный ответ сервера: отсутствует статус")
-                );
+                Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Ошибка", "Некорректный ответ сервера: отсутствует статус"));
                 return;
             }
 
@@ -345,10 +372,7 @@ public class MainController implements Initializable {
             if ("OK".equals(status)) {
                 JsonNode dataNode = response.get("data");
                 if (dataNode != null && dataNode.isArray()) {
-                    List<Report> reports = mapper.readValue(
-                            dataNode.toString(),
-                            mapper.getTypeFactory().constructCollectionType(List.class, Report.class)
-                    );
+                    List<Report> reports = mapper.readValue(dataNode.toString(), mapper.getTypeFactory().constructCollectionType(List.class, Report.class));
 
                     Platform.runLater(() -> {
                         reportsData.clear();
@@ -356,30 +380,25 @@ public class MainController implements Initializable {
                         accessMessageLabel.setText(""); // Скрываем сообщение
                     });
                 } else {
-                    Platform.runLater(() ->
-                            showAlert(Alert.AlertType.ERROR, "Ошибка",
-                                    response.get("message").asText())
-                    );
+                    Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Ошибка", response.get("message").asText()));
                 }
             } else if ("UNAUTHORIZED".equals(status)) {
                 // Обработка статуса UNAUTHORIZED
-                Platform.runLater(() -> {
-                    accessMessageLabel.setText("Запросите у администратора доступ.");
-                });
+                UserSession userSession = UserSession.getInstance();
+                if (!isUserHasTabGroups(userSession)) {
+                    Platform.runLater(() -> accessMessageLabel.setText("Запросите у администратора доступ."));
+                }
             } else {
                 // Безопасное получение сообщения об ошибке
                 JsonNode messageNode = response.get("message");
                 String errorMessage = messageNode != null ? messageNode.asText("Неизвестная ошибка") : "Неизвестная ошибка";
 
-                Platform.runLater(() ->
-                        showAlert(Alert.AlertType.ERROR, "Ошибка", errorMessage)
-                );
+                Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Ошибка", errorMessage));
             }
         } catch (Exception e) {
             Platform.runLater(() -> {
                 System.err.println("Ошибка при обработке ответа: " + e.getMessage());
-                showAlert(Alert.AlertType.ERROR, "Ошибка",
-                        "Ошибка при обработке данных: " + e.getMessage());
+                showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при обработке данных: " + e.getMessage());
             });
         }
     }
@@ -405,10 +424,8 @@ public class MainController implements Initializable {
             // После закрытия окна обновляем данные
             loadReports();
         } catch (IOException e) {
-            e.printStackTrace();
-            showAlert(Alert.AlertType.ERROR, "Ошибка",
-                    "Ошибка при открытии окна деталей: " + e.getMessage() + "\n" +
-                            "Причина: " + (e.getCause() != null ? e.getCause().getMessage() : "неизвестна"));
+            e.printStackTrace(System.err);
+            showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при открытии окна деталей: " + e.getMessage() + "\n" + "Причина: " + (e.getCause() != null ? e.getCause().getMessage() : "неизвестна"));
         }
     }
 
@@ -419,25 +436,15 @@ public class MainController implements Initializable {
     @FXML
     private TableColumn<User, String> fullNameColumn; // Колонка для ФИО
 
-    private ObservableList<User> usersData = FXCollections.observableArrayList(); // Данные пользователей
+    private final ObservableList<User> usersData = FXCollections.observableArrayList(); // Данные пользователей
 
-    private void loadUsers() {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(SERVER_URL + "/api/users"))
-                .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
-                .GET()
-                .build();
+    public void loadUsers() {
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(SERVER_URL + "/api/users")).header("Authorization", "Bearer " + UserSession.getInstance().getToken()).GET().build();
 
-        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApply(HttpResponse::body)
-                .thenAccept(this::handleUsersResponse)
-                .exceptionally(e -> {
-                    Platform.runLater(() ->
-                            showAlert(Alert.AlertType.ERROR, "Ошибка",
-                                    "Ошибка при загрузке пользователей: " + e.getMessage())
-                    );
-                    return null;
-                });
+        HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body).thenAccept(this::handleUsersResponse).exceptionally(e -> {
+            Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при загрузке пользователей: " + e.getMessage()));
+            return null;
+        });
     }
 
     private void handleUsersResponse(String responseBody) {
@@ -445,10 +452,7 @@ public class MainController implements Initializable {
             JsonNode response = mapper.readTree(responseBody);
             JsonNode dataNode = response.get("data");
             if (dataNode != null && dataNode.isArray()) {
-                List<User> users = mapper.readValue(
-                        dataNode.toString(),
-                        mapper.getTypeFactory().constructCollectionType(List.class, User.class)
-                );
+                List<User> users = mapper.readValue(dataNode.toString(), mapper.getTypeFactory().constructCollectionType(List.class, User.class));
                 List<User> finalUsers = users.stream().peek(user -> user.setFullName((user.getFullName()).equals("null null null") ? "" : user.getFirstName() + " " + user.getLastName() + " " + user.getMiddleName())).toList();
                 Platform.runLater(() -> {
                     usersData.clear();
@@ -459,8 +463,7 @@ public class MainController implements Initializable {
         } catch (Exception e) {
             Platform.runLater(() -> {
                 System.err.println("Ошибка при обработке ответа: " + e.getMessage());
-                showAlert(Alert.AlertType.ERROR, "Ошибка",
-                        "Ошибка при обработке данных: " + e.getMessage());
+                showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при обработке данных: " + e.getMessage());
             });
         }
     }
@@ -508,9 +511,8 @@ public class MainController implements Initializable {
                 // После закрытия окна обновляем данные
                 loadUsers();
             } catch (IOException e) {
-                e.printStackTrace();
-                showAlert(Alert.AlertType.ERROR, "Ошибка",
-                        "Ошибка при открытии окна редактирования: " + e.getMessage());
+                e.printStackTrace(System.err);
+                showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при открытии окна редактирования: " + e.getMessage());
             }
         } else {
             showAlert(Alert.AlertType.WARNING, "Ошибка", "Выберите пользователя для редактирования.");
@@ -547,40 +549,26 @@ public class MainController implements Initializable {
 
     private void deleteUserFromServer(User user) {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(SERVER_URL + "/api/users/delete/" + user.getId()))
-                    .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
-                    .DELETE()
-                    .build();
+            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(SERVER_URL + "/api/users/delete/" + user.getId())).header("Authorization", "Bearer " + UserSession.getInstance().getToken()).DELETE().build();
 
-            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenAccept(response -> {
-                        Platform.runLater(() -> {
-                            if (response.statusCode() == 200) {
-                                // Успешное удаление
-                                showAlert(Alert.AlertType.INFORMATION, "Успех",
-                                        "Пользователь " + user.getUsername() + " успешно удален.");
+            HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenAccept(response -> Platform.runLater(() -> {
+                if (response.statusCode() == 200) {
+                    // Успешное удаление
+                    showAlert(Alert.AlertType.INFORMATION, "Успех", "Пользователь " + user.getUsername() + " успешно удален.");
 
-                                // Обновляем список пользователей
-                                loadUsers();
-                            } else {
-                                // Ошибка при удалении
-                                showAlert(Alert.AlertType.ERROR, "Ошибка",
-                                        "Не удалось удалить пользователя. Код ответа: " + response.statusCode());
-                            }
-                        });
-                    })
-                    .exceptionally(ex -> {
-                        Platform.runLater(() -> {
-                            showAlert(Alert.AlertType.ERROR, "Ошибка",
-                                    "Ошибка при удалении пользователя: " + ex.getMessage());
-                        });
-                        return null;
-                    });
+                    // Обновляем список пользователей
+                    loadUsers();
+                } else {
+                    // Ошибка при удалении
+                    showAlert(Alert.AlertType.ERROR, "Ошибка", "Не удалось удалить пользователя. Код ответа: " + response.statusCode());
+                }
+            })).exceptionally(ex -> {
+                Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при удалении пользователя: " + ex.getMessage()));
+                return null;
+            });
 
         } catch (Exception e) {
-            showAlert(Alert.AlertType.ERROR, "Ошибка",
-                    "Ошибка при подготовке запроса на удаление: " + e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при подготовке запроса на удаление: " + e.getMessage());
         }
     }
 
@@ -590,13 +578,16 @@ public class MainController implements Initializable {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/anticorruption/application/user_registration.fxml"));
             Parent root = loader.load();
 
+            UserRegistrationController controller = loader.getController();
+            controller.setMainController(this); // Передаем ссылку на MainController
+
             Stage stage = new Stage();
             stage.setTitle("Регистрация пользователя");
             stage.setScene(new Scene(root));
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.showAndWait();
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
             showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при открытии окна регистрации: " + e.getMessage());
         }
     }
@@ -616,14 +607,12 @@ public class MainController implements Initializable {
         dialog.setHeaderText("Введите новый пароль для пользователя: " + selectedUser.getUsername());
         dialog.setContentText("Новый пароль:");
         // Применяем CSS стиль
-        dialog.getDialogPane().getStylesheets().add(getClass().getResource("/org/anticorruption/application/styles.css").toExternalForm());
+        dialog.getDialogPane().getStylesheets().add(Objects.requireNonNull(getClass().getResource("/org/anticorruption/application/styles.css")).toExternalForm());
 
         // Получаем новый пароль
         Optional<String> result = dialog.showAndWait();
 
-        result.ifPresent(newPassword -> {
-            updateUserPassword(selectedUser.getId(), newPassword);
-        });
+        result.ifPresent(newPassword -> updateUserPassword(selectedUser.getId(), newPassword));
     }
 
     private void updateUserPassword(Long userId, String newPassword) {
@@ -632,29 +621,18 @@ public class MainController implements Initializable {
             ObjectNode requestBody = mapper.createObjectNode();
             requestBody.put("newPassword", newPassword);
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(SERVER_URL + "/api/auth/update-password/" + userId))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
-                    .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                    .build();
+            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(SERVER_URL + "/api/auth/update-password/" + userId)).header("Content-Type", "application/json").header("Authorization", "Bearer " + UserSession.getInstance().getToken()).PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString())).build();
 
-            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenAccept(response -> {
-                        Platform.runLater(() -> {
-                            if (response.statusCode() == 200) {
-                                showAlert(Alert.AlertType.INFORMATION, "Успех", "Пароль успешно обновлен.");
-                            } else {
-                                showAlert(Alert.AlertType.ERROR, "Ошибка", "Не удалось обновить пароль. Код ответа: " + response.statusCode());
-                            }
-                        });
-                    })
-                    .exceptionally(ex -> {
-                        Platform.runLater(() -> {
-                            showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при обновлении пароля: " + ex.getMessage());
-                        });
-                        return null;
-                    });
+            HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenAccept(response -> Platform.runLater(() -> {
+                if (response.statusCode() == 200) {
+                    showAlert(Alert.AlertType.INFORMATION, "Успех", "Пароль успешно обновлен.");
+                } else {
+                    showAlert(Alert.AlertType.ERROR, "Ошибка", "Не удалось обновить пароль. Код ответа: " + response.statusCode());
+                }
+            })).exceptionally(ex -> {
+                Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при обновлении пароля: " + ex.getMessage()));
+                return null;
+            });
 
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при подготовке запроса на обновление пароля: " + e.getMessage());
@@ -662,20 +640,11 @@ public class MainController implements Initializable {
     }
 
     private void loadAgents(Report report) {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(SERVER_URL + "/api/users/get-agents"))
-                .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
-                .GET()
-                .build();
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(SERVER_URL + "/api/users/get-agents")).header("Authorization", "Bearer " + UserSession.getInstance().getToken()).GET().build();
 
-        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApply(HttpResponse::body)
-                .thenAccept(responseBody -> handleAgentsResponse(responseBody, report)) // Передаем отчет в обработчик
+        HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body).thenAccept(responseBody -> handleAgentsResponse(responseBody, report)) // Передаем отчет в обработчик
                 .exceptionally(e -> {
-                    Platform.runLater(() ->
-                            showAlert(Alert.AlertType.ERROR, "Ошибка",
-                                    "Ошибка при загрузке сотрудников: " + e.getMessage())
-                    );
+                    Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при загрузке сотрудников: " + e.getMessage()));
                     return null;
                 });
     }
@@ -687,10 +656,7 @@ public class MainController implements Initializable {
             JsonNode response = mapper.readTree(responseBody);
             JsonNode dataNode = response.get("data");
             if (dataNode != null && dataNode.isArray()) {
-                agents = mapper.readValue(
-                        dataNode.toString(),
-                        mapper.getTypeFactory().constructCollectionType(List.class, User.class)
-                );
+                agents = mapper.readValue(dataNode.toString(), mapper.getTypeFactory().constructCollectionType(List.class, User.class));
 
                 // Обновляем диалог выбора агента, передавая отчет
                 Platform.runLater(() -> showAssignAgentDialog(report));
@@ -698,8 +664,7 @@ public class MainController implements Initializable {
         } catch (Exception e) {
             Platform.runLater(() -> {
                 System.err.println("Ошибка при обработке ответа: " + e.getMessage());
-                showAlert(Alert.AlertType.ERROR, "Ошибка",
-                        "Ошибка при обработке данных: " + e.getMessage());
+                showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при обработке данных: " + e.getMessage());
             });
         }
     }
@@ -709,13 +674,10 @@ public class MainController implements Initializable {
         dialog.setTitle("Назначить сотрудника");
         dialog.setHeaderText("Выберите сотрудника для назначения на заявку");
         dialog.setContentText("Сотрудник:");
-        dialog.getDialogPane().getStylesheets().add(getClass().getResource("/org/anticorruption/application/styles.css").toExternalForm());
+        dialog.getDialogPane().getStylesheets().add(Objects.requireNonNull(getClass().getResource("/org/anticorruption/application/styles.css")).toExternalForm());
 
         // Фильтруем только агентов с правом решения заявок
-        List<User> filteredAgents = agents.stream()
-                .filter(user -> user.getGroups().stream()
-                        .anyMatch(group -> "SolveReport".equals(group.getName())))
-                .collect(Collectors.toList());
+        List<User> filteredAgents = agents.stream().filter(user -> user.getGroups().stream().anyMatch(group -> "SolveReport".equals(group.getName()))).toList();
 
         dialog.getItems().addAll(filteredAgents);
 
@@ -727,32 +689,25 @@ public class MainController implements Initializable {
     private void assignSelectedAgent(Report report, User agent) {
         // Назначаем сотрудника на заявку
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(SERVER_URL + "/api/reports/" + report.getId() + "/assign?assignedTo=" + agent.getId()))
-                    .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
-                    .method("PATCH", HttpRequest.BodyPublishers.noBody())
-                    .build();
+            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(SERVER_URL + "/api/reports/" + report.getId() + "/assign?assignedTo=" + agent.getId())).header("Authorization", "Bearer " + UserSession.getInstance().getToken()).method("PATCH", HttpRequest.BodyPublishers.noBody()).build();
 
-            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenApply(HttpResponse::body)
-                    .thenAccept(responseBody -> {
-                        try {
-                            JsonNode response = mapper.readTree(responseBody);
-                            if ("OK".equals(response.get("status").asText())) {
-                                showAlert(Alert.AlertType.INFORMATION, "Успех", "Сотрудник успешно назначен на заявку.");
-                                report.setAssignedToFullName(agent.getFullName()); // Обновляем ФИО назначенного сотрудника
-                                reportsTable.refresh(); // Обновляем таблицу
-                            } else {
-                                showAlert(Alert.AlertType.ERROR, "Ошибка", response.get("message").asText());
-                            }
-                        } catch (Exception e) {
-                            showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при обработке ответа: " + e.getMessage());
-                        }
-                    })
-                    .exceptionally(e -> {
-                        showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при отправке запроса: " + e.getMessage());
-                        return null;
-                    });
+            HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body).thenAccept(responseBody -> {
+                try {
+                    JsonNode response = mapper.readTree(responseBody);
+                    if ("OK".equals(response.get("status").asText())) {
+                        showAlert(Alert.AlertType.INFORMATION, "Успех", "Сотрудник успешно назначен на заявку.");
+                        report.setAssignedToFullName(agent.getFullName()); // Обновляем ФИО назначенного сотрудника
+                        reportsTable.refresh(); // Обновляем таблицу
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Ошибка", response.get("message").asText());
+                    }
+                } catch (Exception e) {
+                    showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при обработке ответа: " + e.getMessage());
+                }
+            }).exceptionally(e -> {
+                showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при отправке запроса: " + e.getMessage());
+                return null;
+            });
 
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при назначении сотрудника: " + e.getMessage());
@@ -767,5 +722,213 @@ public class MainController implements Initializable {
         } else {
             showAlert(Alert.AlertType.WARNING, "Ошибка", "Выберите отчет для назначения агента.");
         }
+    }
+
+    @FXML
+    private TextField filterReporterIdField;
+    @FXML
+    private DatePicker filterStartDatePicker;
+    @FXML
+    private DatePicker filterEndDatePicker;
+    @FXML
+    private TextField filterLocationField;
+    @FXML
+    private TextField filterInvolvedPersonsField;
+    @FXML
+    private ComboBox<String> filterStatusComboBox;
+    @FXML
+    private ComboBox<User> filterAssignedToComboBox;
+    @FXML
+    private Button filterButton;
+
+    // Метод инициализации фильтра
+    private void setupFilterComponents() {
+        // Наполнение ComboBox статусами
+        filterStatusComboBox.getItems().addAll("NEW", "IN_PROGRESS", "CLOSED");
+        // Установка prompt text
+        filterStatusComboBox.setPromptText("Статус");
+        filterAssignedToComboBox.setPromptText("Назначен");
+        filterStatusComboBox.setPlaceholder(new Label("Статус"));
+        filterAssignedToComboBox.setPlaceholder(new Label("Назначен"));
+
+        // Обработчик кнопки фильтрации
+        filterButton.setOnAction(event -> applyFilter());
+    }
+
+    @FXML
+    private void resetFilter() {
+        // Очистка текстовых полей
+        filterReporterIdField.clear();
+        filterLocationField.clear();
+        filterInvolvedPersonsField.clear();
+
+        // Очистка DatePicker
+        filterStartDatePicker.setValue(null);
+        filterEndDatePicker.setValue(null);
+
+        // Очистка ComboBox
+        filterStatusComboBox.setValue(null);
+        filterStatusComboBox.setPromptText("Статус");
+        filterStatusComboBox.setPlaceholder(new Label("Статус"));
+        filterAssignedToComboBox.setValue(null);
+        filterAssignedToComboBox.setPromptText("Назначен");
+        filterAssignedToComboBox.setPlaceholder(new Label("Назначен"));
+
+
+        // Перезагрузка всех отчетов
+        loadReports();
+    }
+
+    @FXML
+    public void applyFilter() {
+        try {
+            // Подготовка параметров запроса
+            Map<String, Object> params = new HashMap<>();
+
+            // Добавление параметров с проверкой на пустоту
+            addParameterIfNotEmpty(params, "reporterId", filterReporterIdField.getText());
+
+            if (filterStartDatePicker.getValue() != null) {
+                params.put("startIncidentDate", filterStartDatePicker.getValue().toString());
+            }
+
+            if (filterEndDatePicker.getValue() != null) {
+                params.put("endIncidentDate", filterEndDatePicker.getValue().toString());
+            }
+
+            addParameterIfNotEmpty(params, "incidentLocation", filterLocationField.getText());
+            addParameterIfNotEmpty(params, "involvedPersons", filterInvolvedPersonsField.getText());
+
+            if (filterStatusComboBox.getValue() != null) {
+                params.put("status", filterStatusComboBox.getValue());
+            }
+
+            // Изменяем логику для ComboBox сотрудников
+            if (filterAssignedToComboBox.getValue() != null) {
+                params.put("assignedTo", filterAssignedToComboBox.getValue().getId());
+            }
+
+            // Формирование URL с параметрами
+            StringBuilder urlBuilder = new StringBuilder(SERVER_URL + "/api/reports/filter?");
+            for (Map.Entry<String, Object> entry : params.entrySet()) {
+                urlBuilder.append(entry.getKey()).append("=").append(URLEncoder.encode(entry.getValue().toString(), StandardCharsets.UTF_8)).append("&");
+            }
+            String url = urlBuilder.toString().replaceAll("&$", "");
+
+            // Создание HTTP-запроса
+            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).header("Authorization", "Bearer " + UserSession.getInstance().getToken()).GET().build();
+
+            // Отправка запроса
+            HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body).thenAccept(this::handleFilteredReportsResponse).exceptionally(this::handleFilterError);
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при применении фильтра: " + e.getMessage());
+        }
+    }
+
+    // Вспомогательный метод для добавления параметров
+    private void addParameterIfNotEmpty(Map<String, Object> params, String key, String value) {
+        if (value != null && !value.trim().isEmpty()) {
+            params.put(key, value);
+        }
+    }
+
+    // Обработка ответа с отфильтрованными отчетами
+    private void handleFilteredReportsResponse(String responseBody) {
+        try {
+            JsonNode response = mapper.readTree(responseBody);
+            JsonNode dataNode = response.get("data");
+
+            if (dataNode != null && dataNode.isArray()) {
+                List<Report> filteredReports = mapper.readValue(dataNode.toString(), mapper.getTypeFactory().constructCollectionType(List.class, Report.class));
+
+                Platform.runLater(() -> {
+                    reportsData.clear();
+                    reportsData.addAll(filteredReports);
+
+                    // Опционально: показать количество найденных отчетов
+                    int count = filteredReports.size();
+                    showAlert(Alert.AlertType.INFORMATION, "Результаты поиска", "Найдено отчетов: " + count);
+                });
+            }
+        } catch (Exception e) {
+            Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при обработке отфильтрованных отчетов: " + e.getMessage()));
+        }
+    }
+
+    // Обработка ошибок фильтрации
+    private Void handleFilterError(Throwable ex) {
+        Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при фильтрации: " + ex.getMessage()));
+        return null;
+    }
+
+    private void loadAgentsForFilter() {
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(SERVER_URL + "/api/users/get-agents")).header("Authorization", "Bearer " + UserSession.getInstance().getToken()).GET().build();
+
+        HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body).thenAccept(this::handleAgentsForFilterResponse).exceptionally(this::handleAgentsLoadError);
+    }
+
+    private void handleAgentsForFilterResponse(String responseBody) {
+        try {
+            JsonNode response = mapper.readTree(responseBody);
+            JsonNode dataNode = response.get("data");
+
+            if (dataNode != null && dataNode.isArray()) {
+                agents = mapper.readValue(dataNode.toString(), mapper.getTypeFactory().constructCollectionType(List.class, User.class));
+                agents = agents.stream().filter(user -> user.getGroups().stream().anyMatch(group -> "SolveReport".equals(group.getName()))).collect(Collectors.toList());
+
+                Platform.runLater(() -> {
+                    // Настройка ComboBox для выбора сотрудника
+                    filterAssignedToComboBox.getItems().clear();
+                    filterAssignedToComboBox.getItems().addAll(agents);
+
+                    // Кастомизация отображения сотрудника в ComboBox
+                    filterAssignedToComboBox.setCellFactory(param -> new ListCell<User>() {
+                        @Override
+                        protected void updateItem(User user, boolean empty) {
+                            super.updateItem(user, empty);
+
+                            if (empty || user == null) {
+                                setText(null);
+                            } else {
+                                setText(user.getFullName() + " (" + user.getUsername() + ")");
+                            }
+                        }
+                    });
+
+                    // Настройка конвертера для правильного отображения выбранного значения
+                    filterAssignedToComboBox.setConverter(new StringConverter<User>() {
+                        @Override
+                        public String toString(User user) {
+                            return user == null ? "" : user.getFullName() + " (" + user.getUsername() + ")";
+                        }
+
+                        @Override
+                        public User fromString(String string) {
+                            return filterAssignedToComboBox.getItems().stream().filter(user -> (user.getFullName() + " (" + user.getUsername() + ")").equals(string)).findFirst().orElse(null);
+                        }
+                    });
+                });
+            }
+        } catch (Exception e) {
+            Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при загрузке списка сотрудников: " + e.getMessage()));
+        }
+    }
+
+    private Void handleAgentsLoadError(Throwable ex) {
+        Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Ошибка", "Не удалось загрузить список сотрудников: " + ex.getMessage()));
+        return null;
+    }
+
+    @FXML
+    private void showAboutAuthor() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Об авторе");
+        alert.setHeaderText("АИС \"Антикоррупционный отдел\"");
+        alert.setContentText("Разработана Гордейчиком Егором, студентом группы ПИ22-1в в рамках курсовой работы.");
+
+        // Применяем стили
+        alert.getDialogPane().getStylesheets().add(Objects.requireNonNull(getClass().getResource("/org/anticorruption/application/styles.css")).toExternalForm());
+
+        alert.showAndWait();
     }
 }

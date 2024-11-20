@@ -4,17 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
+import lombok.Setter;
 import org.anticorruption.application.ConfigManager;
-import org.anticorruption.application.Models.User;
+import org.anticorruption.application.HttpsClient;
 import org.anticorruption.application.UserSession;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -22,6 +18,8 @@ import java.net.http.HttpResponse;
 
 public class UserRegistrationController {
     private final String SERVER_URL = ConfigManager.getProperty("server.url");
+    @Setter
+    private MainController mainController;
 
     @FXML
     private TextField usernameField;
@@ -45,11 +43,17 @@ public class UserRegistrationController {
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
                     .build();
 
-            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenAccept(response -> {
                         if (response.statusCode() == 200) {
                             Platform.runLater(() -> {
                                 showAlert(Alert.AlertType.INFORMATION, "Успех", "Пользователь успешно зарегистрирован.");
+
+                                // Вызываем loadUsers() в MainController, если он установлен
+                                if (mainController != null) {
+                                    mainController.loadUsers();
+                                }
+
                                 onCancel();
                             });
                         } else {

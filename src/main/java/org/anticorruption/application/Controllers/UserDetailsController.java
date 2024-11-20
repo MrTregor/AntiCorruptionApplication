@@ -9,6 +9,7 @@ import javafx.scene.control.*;
 import javafx.stage.Stage;
 import lombok.Setter;
 import org.anticorruption.application.ConfigManager;
+import org.anticorruption.application.HttpsClient;
 import org.anticorruption.application.Models.AccessGroup;
 import org.anticorruption.application.Models.User;
 import org.anticorruption.application.UserSession;
@@ -66,6 +67,10 @@ public class UserDetailsController {
     public TextArea notesArea;
     @FXML
     public TabPane tabPane;
+    @FXML
+    public Button saveButton;
+    @FXML
+    public Button cancelButton;
     @FXML
     private TextField usernameField;
     @FXML
@@ -128,8 +133,8 @@ public class UserDetailsController {
         addressField.clear();
         employeeIdField.clear();
         positionField.clear();
-        departmentField.clear();
         hireDatePicker.setValue(null);
+        departmentField.clear();
         contractTypeField.clear();
         salaryField.clear();
         educationArea.clear();
@@ -367,7 +372,7 @@ private void onSave() {
         if (groupsListView.getItems() != null) {
             List<String> currentGroups = groupsListView.getItems();
             List<String> originalGroups = user.getGroups() != null
-                    ? user.getGroups().stream().map(AccessGroup::getName).collect(Collectors.toList())
+                    ? user.getGroups().stream().map(AccessGroup::getName).toList()
                     : new ArrayList<>();
 
             if (!currentGroups.equals(originalGroups)) {
@@ -393,7 +398,7 @@ private void onSave() {
         }
 
         // Если нет изменений, выходим
-        if (requestBody.size() == 0) {
+        if (requestBody.isEmpty()) {
             showAlert(Alert.AlertType.INFORMATION, "Информация", "Нет изменений для обновления.");
             return;
         }
@@ -406,7 +411,7 @@ private void onSave() {
                 .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
                 .build();
 
-        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(response -> {
                     if (response.statusCode() == 200) {
                         Platform.runLater(() -> {
@@ -508,7 +513,7 @@ private void onSave() {
     @FXML
     private Button removeGroupButton;
 
-    private List<AccessGroup> availableGroups = new ArrayList<>();
+    private final List<AccessGroup> availableGroups = new ArrayList<>();
 
 
     private void loadAvailableGroups() {
@@ -519,7 +524,7 @@ private void onSave() {
                     .GET()
                     .build();
 
-            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(response -> {
                         if (response.statusCode() == 200) {
                             try {
@@ -539,13 +544,13 @@ private void onSave() {
                                     availableGroupsComboBox.getItems().addAll(groupNames);
                                 });
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                e.printStackTrace(System.err);
                             }
                         }
                         return response;
                     });
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
     }
 

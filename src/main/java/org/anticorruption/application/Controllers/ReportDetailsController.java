@@ -2,7 +2,6 @@ package org.anticorruption.application.Controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
@@ -10,6 +9,7 @@ import javafx.scene.control.TextArea;
 import javafx.stage.Stage;
 import lombok.Setter;
 import org.anticorruption.application.ConfigManager;
+import org.anticorruption.application.HttpsClient;
 import org.anticorruption.application.Models.Report;
 import org.anticorruption.application.UserSession;
 
@@ -72,17 +72,14 @@ public class ReportDetailsController {
 
     private void updateReportStatus(String status) {
         try {
-            ObjectNode requestBody = mapper.createObjectNode();
-            requestBody.put("status", status);
-
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(SERVER_URL + "/api/reports/" + report.getId()))
+                    .uri(URI.create(SERVER_URL + "/api/reports/" + report.getId() + "/status")) // Измените на PATCH
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
-                    .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
+                    .method("PATCH", HttpRequest.BodyPublishers.ofString("\""+status+"\"")) // Используйте PATCH
                     .build();
 
-            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(HttpResponse::body)
                     .thenAccept(responseBody -> {
                         try {
@@ -91,7 +88,10 @@ public class ReportDetailsController {
                                 javafx.application.Platform.runLater(() -> {
                                     showAlert(Alert.AlertType.INFORMATION, "Успех",
                                             "Статус заявки успешно обновлен");
-                                    stage.close();
+                                    // Закрыть окно только если статус "CLOSED"
+                                    if ("CLOSED".equals(status)) {
+                                        stage.close();
+                                    }
                                 });
                             } else {
                                 showAlert(Alert.AlertType.ERROR, "Ошибка",
@@ -121,17 +121,34 @@ public class ReportDetailsController {
             report.setSolution(solution);
 
             try {
-                ObjectNode requestBody = mapper.createObjectNode();
-                requestBody.put("solution", solution);
+                UserSession userSession = UserSession.getInstance();
 
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(SERVER_URL + "/api/reports/" + report.getId()))
-                        .header("Content-Type", "application/json")
-                        .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
-                        .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                        .build();
+                HttpRequest request;
 
-                client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                // Проверяем, есть ли у пользователя группа AccessToAllReports
+                if (userSession.hasGroup("AccessToAllReports")) {
+                    // Полное обновление отчета
+                    request = HttpRequest.newBuilder()
+                            .uri(URI.create(SERVER_URL + "/api/reports/" + report.getId()))
+                            .header("Content-Type", "application/json")
+                            .header("Authorization", "Bearer " + userSession.getToken())
+                            .PUT(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(report)))
+                            .build();
+                } else if (userSession.hasGroup("SolveReport")) {
+                    // Обновление только решения
+                    request = HttpRequest.newBuilder()
+                            .uri(URI.create(SERVER_URL + "/api/reports/" + report.getId() + "/solution"))
+                            .header("Content-Type", "text/plain")
+                            .header("Authorization", "Bearer " + userSession.getToken())
+                            .method("PATCH", HttpRequest.BodyPublishers.ofString(solution))
+                            .build();
+                } else {
+                    // Если нет необходимых прав
+                    showAlert(Alert.AlertType.ERROR, "Ошибка", "У вас недостаточно прав для изменения отчета.");
+                    return;
+                }
+
+                HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString())
                         .thenApply(HttpResponse::body)
                         .thenAccept(responseBody -> {
                             try {
@@ -139,7 +156,7 @@ public class ReportDetailsController {
                                 if ("OK".equals(response.get("status").asText())) {
                                     javafx.application.Platform.runLater(() -> {
                                         showAlert(Alert.AlertType.INFORMATION, "Успех",
-                                                "Решение успешно сохранено на сервере.");
+                                                "Успешно сохранено на сервере.");
                                         stage.close();
                                     });
                                 } else {

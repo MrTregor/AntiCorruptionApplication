@@ -13,16 +13,21 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.ComboBox?>
 <VBox xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="org.anticorruption.application.Controllers.MainController"
       spacing="10" minWidth="300"
       stylesheets="@styles.css">
+    <HBox spacing="10">
+        <Button fx:id="logoutButton" text="Выйти" onAction="#onLogout"/>
+        <Button fx:id="aboutAuthorButton" text="Об авторе" onAction="#showAboutAuthor"/>
+    </HBox>
     <padding>
         <Insets top="20" right="20" bottom="20" left="20"/>
     </padding>
 
-    <Label fx:id="accessMessageLabel" text="" style="-fx-text-fill: red;"/> <!-- Добавьте этот Label -->
+    <Label fx:id="accessMessageLabel" style="-fx-text-fill: red;"/> <!-- Добавьте этот Label -->
 
     <TabPane fx:id="mainTabPane">
         <Tab fx:id="createReportTab" text="Написать донос" closable="false">
@@ -48,17 +53,28 @@
                 <padding>
                     <Insets top="20" right="20" bottom="20" left="20"/>
                 </padding>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <TextField fx:id="filterReporterIdField" promptText="ID заявки" prefWidth="100"/>
+                    <DatePicker fx:id="filterStartDatePicker" promptText="Дата с" prefWidth="120"/>
+                    <DatePicker fx:id="filterEndDatePicker" promptText="Дата по" prefWidth="120"/>
+                    <TextField fx:id="filterLocationField" promptText="Место" prefWidth="100"/>
+                    <TextField fx:id="filterInvolvedPersonsField" promptText="Вовлеченные лица" prefWidth="150"/>
+                    <ComboBox fx:id="filterStatusComboBox" promptText="Статус" prefWidth="120"/>
+                    <ComboBox fx:id="filterAssignedToComboBox" promptText="Назначен" prefWidth="200"/>
+                    <Button fx:id="filterButton" text="Найти" onAction="#applyFilter"/>
+                    <Button text="Сбросить" onAction="#resetFilter"/>
+                </HBox>
                 <TableView fx:id="reportsTable" VBox.vgrow="ALWAYS">
                     <columns>
                         <TableColumn fx:id="idColumn" text="ID"/>
                         <TableColumn fx:id="statusColumn" text="Статус"/>
-                        <TableColumn fx:id="solutionColumn" text="Решение"/>
-                        <TableColumn fx:id="assignedToColumn" minWidth="500" text="Назначенный сотрудник"/>
+                        <TableColumn fx:id="assignedToColumn" prefWidth="200" text="Назначенный сотрудник"/>
+                        <TableColumn fx:id="solutionColumn" prefWidth="200" text="Решение"/>
                     </columns>
                 </TableView>
                 <HBox spacing="10">
                     <Button text="Обновить" onAction="#refreshReports"/>
-                    <Button text="Назначить" onAction="#assignAgentToReport"/>
+                    <Button text="Назначить" fx:id="assignButton" onAction="#assignAgentToReport"/>
                 </HBox>
             </VBox>
         </Tab>
@@ -71,7 +87,7 @@
                 <TableView fx:id="usersTable" VBox.vgrow="ALWAYS">
                     <columns>
                         <TableColumn fx:id="usernameColumn" text="Имя пользователя"/>
-                        <TableColumn fx:id="fullNameColumn" minWidth="500" text="ФИО"/>
+                        <TableColumn fx:id="fullNameColumn" prefWidth="500" text="ФИО"/>
                     </columns>
                 </TableView>
                 <HBox spacing="10">

@@ -10,7 +10,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Base64;
@@ -25,8 +24,11 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import lombok.Setter;
 import org.anticorruption.application.ConfigManager;
+import org.anticorruption.application.HttpsClient;
 import org.anticorruption.application.UserSession;
+
 
 import static org.anticorruption.application.AlertUtils.showAlert;
 
@@ -37,14 +39,16 @@ public class LoginController {
     @FXML
     private PasswordField passwordField;
 
-    @FXML
     private Pane root; // Добавьте это поле
 
+    // Метод для установки stage извне, если потребуется
+    @Setter
     private Stage stage; // Добавьте это поле
 
-    private final HttpClient client = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
     private final String SERVER_URL = ConfigManager.getProperty("server.url");
+
+
 
     @FXML
     protected void onLoginButtonClick(ActionEvent event) {
@@ -66,16 +70,21 @@ public class LoginController {
             Node source = (Node) event.getSource();
             stage = (Stage) source.getScene().getWindow();
 
-            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(HttpResponse::body)
                     .thenAccept(response -> handleResponse(response, stage))
                     .exceptionally(e -> {
-                        System.err.println("Ошибка при отправке запроса: " + e.getMessage());
+                        Platform.runLater(() -> {
+                            System.err.println("Ошибка при отправке запроса: " + e.getMessage());
+                            showAlert(Alert.AlertType.ERROR, "Ошибка подключения",
+                                    "Не удалось установить соединение с сервером: " + e.getMessage());
+                        });
                         return null;
                     });
 
         } catch (Exception e) {
             System.err.println("Ошибка: " + e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Ошибка", e.getMessage());
         }
     }
 
@@ -142,9 +151,10 @@ public class LoginController {
             stage.show();
         } catch (Exception e) {
             System.err.println("Ошибка при открытии главной формы: " + e.getMessage());
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
     }
+
     @FXML
     private void initialize() {
         // Создаем кастомный заголовок
@@ -170,12 +180,8 @@ public class LoginController {
 
         // Проверяем, что root не null перед добавлением
         if (root != null) {
-            root.getChildren().add(0, titleBar); // Добавляем заголовок в корень
+            root.getChildren().addFirst(titleBar); // Добавляем заголовок в корень
         }
     }
 
-    // Метод для установки stage извне, если потребуется
-    public void setStage(Stage stage) {
-        this.stage = stage;
-    }
 }

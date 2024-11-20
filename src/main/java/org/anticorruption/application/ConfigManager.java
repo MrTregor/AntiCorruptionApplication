@@ -15,7 +15,7 @@ public class ConfigManager {
                 properties.load(input);
             }
         } catch (IOException ex) {
-            ex.printStackTrace();
+            ex.printStackTrace(System.err);
         }
     }
 
