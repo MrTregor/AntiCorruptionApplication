@@ -72,11 +72,15 @@ public class ReportDetailsController {
 
     private void updateReportStatus(String status) {
         try {
+            if ("CLOSED".equals(status)) {
+                onSave();
+            }
+
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(SERVER_URL + "/api/reports/" + report.getId() + "/status")) // Измените на PATCH
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
-                    .method("PATCH", HttpRequest.BodyPublishers.ofString("\""+status+"\"")) // Используйте PATCH
+                    .method("PATCH", HttpRequest.BodyPublishers.ofString("\"" + status + "\"")) // Используйте PATCH
                     .build();
 
             HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString())
