@@ -24,6 +24,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Контроллер для управления деталями пользователя в антикоррупционной информационной системе.
+ * Обеспечивает отображение, редактирование и обновление информации о пользователе.
+ *
+ * @author Гордейчик Е.А.
+ * @version 1.0
+ * @since 2024-10-10
+ */
 public class UserDetailsController {
     private final String SERVER_URL = ConfigManager.getProperty("server.url");
     // Основная информация
@@ -117,8 +125,10 @@ public class UserDetailsController {
     private final HttpClient client = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
 
-
-
+    /**
+     * Очищает все поля формы.
+     * Используется при создании нового пользователя или сбросе формы.
+     */
     private void clearFields() {
         usernameField.clear();
         lastNameField.clear();
@@ -147,6 +157,10 @@ public class UserDetailsController {
         snilsField.clear();
     }
 
+    /**
+     * Инициализирует компоненты интерфейса при загрузке.
+     * Настраивает ComboBox для пола, ListView для групп доступа и загружает списки групп.
+     */
     @FXML
     private void initialize() {
         // Настройка ComboBox для пола
@@ -166,6 +180,11 @@ public class UserDetailsController {
         removeGroupButton.setOnAction(event -> removeAccessGroup());
     }
 
+    /**
+     * Устанавливает пользователя для отображения и редактирования.
+     *
+     * @param user Пользователь, информацию которого необходимо показать
+     */
     public void setUser(User user) {
         this.user = user;
         if (user != null) {
@@ -176,6 +195,10 @@ public class UserDetailsController {
         }
     }
 
+    /**
+     * Заполняет поля интерфейса данными из модели пользователя.
+     * Использует рефлексию для безопасного получения значений полей.
+     */
     private void populateFields() {
         if (user == null) return;
 
@@ -260,178 +283,189 @@ public class UserDetailsController {
         }
     }
 
-   @FXML
-private void onSave() {
-    try {
-        // Создание JSON-объекта для обновления пользователя
-        ObjectNode requestBody = mapper.createObjectNode();
+    /**
+     * Обработчик события сохранения изменений пользователя.
+     * Собирает измененные данные и отправляет запрос на обновление на сервер.
+     * Проверяет изменения по каждому полю перед отправкой.
+     */
+    @FXML
+    private void onSave() {
+        try {
+            // Создание JSON-объекта для обновления пользователя
+            ObjectNode requestBody = mapper.createObjectNode();
 
-        // Проверка и добавление измененных полей
-        checkAndAddField("username", usernameField, requestBody);
-        checkAndAddField("lastName", lastNameField, requestBody);
-        checkAndAddField("firstName", firstNameField, requestBody);
-        checkAndAddField("middleName", middleNameField, requestBody);
+            // Проверка и добавление измененных полей
+            checkAndAddField("username", usernameField, requestBody);
+            checkAndAddField("lastName", lastNameField, requestBody);
+            checkAndAddField("firstName", firstNameField, requestBody);
+            checkAndAddField("middleName", middleNameField, requestBody);
 
-        // Дата рождения
-        if (dateOfBirthPicker.getValue() != null) {
-            requestBody.put("dateOfBirth",
-                    dateOfBirthPicker.getValue().atStartOfDay(ZoneId.systemDefault()).toInstant().toString());
-        } else if (user.getDateOfBirth() != null) {
-            // Если дата рождения была установлена, но теперь она null, можно удалить это поле из запроса
-            requestBody.putNull("dateOfBirth");
-        }
-
-        // Пол
-        if (genderComboBox.getValue() != null && !genderComboBox.getValue().equals(user.getGender())) {
-            requestBody.put("gender", genderComboBox.getValue());
-        }
-
-        // Контактная информация
-        checkAndAddField("email", emailField, requestBody);
-        checkAndAddField("phoneNumber", phoneNumberField, requestBody);
-        checkAndAddField("address", addressField, requestBody);
-
-        // Рабочая информация
-        checkAndAddField("employeeId", employeeIdField, requestBody);
-        checkAndAddField("position", positionField, requestBody);
-        checkAndAddField("department", departmentField, requestBody);
-
-        // Дата найма
-        if (hireDatePicker.getValue() != null) {
-            requestBody.put("hireDate",
-                    hireDatePicker.getValue().atStartOfDay(ZoneId.systemDefault()).toInstant().toString());
-        } else if (user.getHireDate() != null) {
-            // Если дата найма была установлена, но теперь она null, можно удалить это поле из запроса
-            requestBody.putNull("hireDate");
-        }
-
-        checkAndAddField("contractType", contractTypeField, requestBody);
-
-        // Зарплата
-        if (!salaryField.getText().isEmpty()) {
-            try {
-                Double salary = Double.parseDouble(salaryField.getText());
-                if (!salary.equals(user.getSalary())) {
-                    requestBody.put("salary", salary);
-                }
-            } catch (NumberFormatException e) {
-                showAlert(Alert.AlertType.WARNING, "Ошибка", "Некорректное значение зарплаты");
-                return;
+            // Дата рождения
+            if (dateOfBirthPicker.getValue() != null) {
+                requestBody.put("dateOfBirth",
+                        dateOfBirthPicker.getValue().atStartOfDay(ZoneId.systemDefault()).toInstant().toString());
+            } else if (user.getDateOfBirth() != null) {
+                // Если дата рождения была установлена, но теперь она null, можно удалить это поле из запроса
+                requestBody.putNull("dateOfBirth");
             }
-        }
 
-        // Паспортные данные
-        checkAndAddField("passportSeries", passportSeriesField, requestBody);
-        checkAndAddField("passportNumber", passportNumberField, requestBody);
-
-        // Личная информация
-        checkAndAddField("maritalStatus", maritalStatusField, requestBody);
-
-        // Количество детей
-        if (!numberOfChildren.getText().isEmpty()) {
-            try {
-                Integer children = Integer.parseInt(numberOfChildren.getText());
-                if (!children.equals(user.getNumberOfChildren())) {
-                    requestBody.put("numberOfChildren", children);
-                }
-            } catch (NumberFormatException e) {
-                showAlert(Alert.AlertType.WARNING, "Ошибка", "Некорректное количество детей");
-                return;
+            // Пол
+            if (genderComboBox.getValue() != null && !genderComboBox.getValue().equals(user.getGender())) {
+                requestBody.put("gender", genderComboBox.getValue());
             }
-        }
 
-        checkAndAddField("militaryServiceInfo", militaryServiceInfoField, requestBody);
+            // Контактная информация
+            checkAndAddField("email", emailField, requestBody);
+            checkAndAddField("phoneNumber", phoneNumberField, requestBody);
+            checkAndAddField("address", addressField, requestBody);
 
-        // Статус увольнения
-        if (isFiredCheckBox.isSelected() != user.getIsFired()) {
-            requestBody.put("isFired", isFiredCheckBox.isSelected());
-        }
+            // Рабочая информация
+            checkAndAddField("employeeId", employeeIdField, requestBody);
+            checkAndAddField("position", positionField, requestBody);
+            checkAndAddField("department", departmentField, requestBody);
 
-        // Документы
-        checkAndAddField("inn", innField, requestBody);
-        checkAndAddField("snils", snilsField, requestBody);
-
-        // Образование и квалификация
-        checkAndAddTextArea("education", educationArea, requestBody);
-        checkAndAddTextArea("workExperience", workExperienceArea, requestBody);
-        checkAndAddTextArea("skills", skillsArea, requestBody);
-
-        // Профессиональное развитие
-        checkAndAddTextArea("qualificationUpgrade", qualificationUpgradeArea, requestBody);
-        checkAndAddTextArea("awards", awardsArea, requestBody);
-        checkAndAddTextArea("disciplinaryActions", disciplinaryActionsArea, requestBody);
-        checkAndAddTextArea("attestationResults", attestationResultsArea, requestBody);
-
-        // Дополнительная информация
-        checkAndAddTextArea("medicalExamResults", medicalExamResultsArea, requestBody);
-        checkAndAddTextArea("bankDetails", bankDetailsArea, requestBody);
-        checkAndAddTextArea("emergencyContact", emergencyContactArea, requestBody);
-        checkAndAddTextArea("notes", notesArea, requestBody);
-
-        // Группы доступа (если изменились)
-        if (groupsListView.getItems() != null) {
-            List<String> currentGroups = groupsListView.getItems();
-            List<String> originalGroups = user.getGroups() != null
-                    ? user.getGroups().stream().map(AccessGroup::getName).toList()
-                    : new ArrayList<>();
-
-            if (!currentGroups.equals(originalGroups)) {
-                requestBody.putArray("groups").addAll(
-                        currentGroups.stream()
-                                .map(groupName -> {
-                                    // Найдем ID группы по имени
-                                    AccessGroup group = availableGroups.stream()
-                                            .filter(g -> g.getName().equals(groupName))
-                                            .findFirst()
-                                            .orElse(null);
-
-                                    ObjectNode groupNode = mapper.createObjectNode();
-                                    if (group != null) {
-                                        groupNode.put("id", group.getId());
-                                    }
-                                    groupNode.put("name", groupName);
-                                    return groupNode;
-                                })
-                                .collect(Collectors.toList())
-                );
+            // Дата найма
+            if (hireDatePicker.getValue() != null) {
+                requestBody.put("hireDate",
+                        hireDatePicker.getValue().atStartOfDay(ZoneId.systemDefault()).toInstant().toString());
+            } else if (user.getHireDate() != null) {
+                // Если дата найма была установлена, но теперь она null, можно удалить это поле из запроса
+                requestBody.putNull("hireDate");
             }
-        }
 
-        // Если нет изменений, выходим
-        if (requestBody.isEmpty()) {
-            showAlert(Alert.AlertType.INFORMATION, "Информация", "Нет изменений для обновления.");
-            return;
-        }
+            checkAndAddField("contractType", contractTypeField, requestBody);
 
-        // Отправка запроса на обновление пользователя
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(SERVER_URL + "/api/users/update/" + user.getId()))
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
-                .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                .build();
-
-        HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(response -> {
-                    if (response.statusCode() == 200) {
-                        Platform.runLater(() -> {
-                            showAlert(Alert.AlertType.INFORMATION, "Успех", "Данные пользователя успешно обновлены.");
-                            if (dialogStage != null) {
-                                dialogStage.close();
-                            }
-                        });
-                    } else {
-                        Platform.runLater(() ->
-                                showAlert(Alert.AlertType.ERROR, "Ошибка", "Не удалось обновить данные пользователя.")
-                        );
+            // Зарплата
+            if (!salaryField.getText().isEmpty()) {
+                try {
+                    Double salary = Double.parseDouble(salaryField.getText());
+                    if (!salary.equals(user.getSalary())) {
+                        requestBody.put("salary", salary);
                     }
-                });
-    } catch (Exception e) {
-        showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при сохранении данных: " + e.getMessage());
-    }
-}
+                } catch (NumberFormatException e) {
+                    showAlert(Alert.AlertType.WARNING, "Ошибка", "Некорректное значение зарплаты");
+                    return;
+                }
+            }
 
-    // Вспомогательные методы для проверки изменений
+            // Паспортные данные
+            checkAndAddField("passportSeries", passportSeriesField, requestBody);
+            checkAndAddField("passportNumber", passportNumberField, requestBody);
+
+            // Личная информация
+            checkAndAddField("maritalStatus", maritalStatusField, requestBody);
+
+            // Количество детей
+            if (!numberOfChildren.getText().isEmpty()) {
+                try {
+                    Integer children = Integer.parseInt(numberOfChildren.getText());
+                    if (!children.equals(user.getNumberOfChildren())) {
+                        requestBody.put("numberOfChildren", children);
+                    }
+                } catch (NumberFormatException e) {
+                    showAlert(Alert.AlertType.WARNING, "Ошибка", "Некорректное количество детей");
+                    return;
+                }
+            }
+
+            checkAndAddField("militaryServiceInfo", militaryServiceInfoField, requestBody);
+
+            // Статус увольнения
+            if (isFiredCheckBox.isSelected() != user.getIsFired()) {
+                requestBody.put("isFired", isFiredCheckBox.isSelected());
+            }
+
+            // Документы
+            checkAndAddField("inn", innField, requestBody);
+            checkAndAddField("snils", snilsField, requestBody);
+
+            // Образование и квалификация
+            checkAndAddTextArea("education", educationArea, requestBody);
+            checkAndAddTextArea("workExperience", workExperienceArea, requestBody);
+            checkAndAddTextArea("skills", skillsArea, requestBody);
+
+            // Профессиональное развитие
+            checkAndAddTextArea("qualificationUpgrade", qualificationUpgradeArea, requestBody);
+            checkAndAddTextArea("awards", awardsArea, requestBody);
+            checkAndAddTextArea("disciplinaryActions", disciplinaryActionsArea, requestBody);
+            checkAndAddTextArea("attestationResults", attestationResultsArea, requestBody);
+
+            // Дополнительная информация
+            checkAndAddTextArea("medicalExamResults", medicalExamResultsArea, requestBody);
+            checkAndAddTextArea("bankDetails", bankDetailsArea, requestBody);
+            checkAndAddTextArea("emergencyContact", emergencyContactArea, requestBody);
+            checkAndAddTextArea("notes", notesArea, requestBody);
+
+            // Группы доступа (если изменились)
+            if (groupsListView.getItems() != null) {
+                List<String> currentGroups = groupsListView.getItems();
+                List<String> originalGroups = user.getGroups() != null
+                        ? user.getGroups().stream().map(AccessGroup::getName).toList()
+                        : new ArrayList<>();
+
+                if (!currentGroups.equals(originalGroups)) {
+                    requestBody.putArray("groups").addAll(
+                            currentGroups.stream()
+                                    .map(groupName -> {
+                                        // Найдем ID группы по имени
+                                        AccessGroup group = availableGroups.stream()
+                                                .filter(g -> g.getName().equals(groupName))
+                                                .findFirst()
+                                                .orElse(null);
+
+                                        ObjectNode groupNode = mapper.createObjectNode();
+                                        if (group != null) {
+                                            groupNode.put("id", group.getId());
+                                        }
+                                        groupNode.put("name", groupName);
+                                        return groupNode;
+                                    })
+                                    .collect(Collectors.toList())
+                    );
+                }
+            }
+
+            // Если нет изменений, выходим
+            if (requestBody.isEmpty()) {
+                showAlert(Alert.AlertType.INFORMATION, "Информация", "Нет изменений для обновления.");
+                return;
+            }
+
+            // Отправка запроса на обновление пользователя
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(SERVER_URL + "/api/users/update/" + user.getId()))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + UserSession.getInstance().getToken())
+                    .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
+                    .build();
+
+            HttpsClient.getClient().sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenAccept(response -> {
+                        if (response.statusCode() == 200) {
+                            Platform.runLater(() -> {
+                                showAlert(Alert.AlertType.INFORMATION, "Успех", "Данные пользователя успешно обновлены.");
+                                if (dialogStage != null) {
+                                    dialogStage.close();
+                                }
+                            });
+                        } else {
+                            Platform.runLater(() ->
+                                    showAlert(Alert.AlertType.ERROR, "Ошибка", "Не удалось обновить данные пользователя.")
+                            );
+                        }
+                    });
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "Ошибка", "Ошибка при сохранении данных: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Вспомогательный метод для проверки и добавления измененного текстового поля в запрос.
+     *
+     * @param fieldName   Имя поля
+     * @param field       Текстовое поле для проверки
+     * @param requestBody JSON-объект для добавления изменений
+     */
     private void checkAndAddField(String fieldName, TextField field, ObjectNode requestBody) {
         String currentValue = field.getText();
         try {
@@ -462,12 +496,22 @@ private void onSave() {
         }
     }
 
+    /**
+     * Обработчик события отмены редактирования.
+     * Закрывает диалоговое окно без сохранения изменений.
+     */
     @FXML
     private void onCancel() {
         dialogStage.close();
     }
 
-    // Вспомогательные методы для рефлексии
+
+    /**
+     * Вспомогательный метод для установки значения текстового поля с использованием рефлексии.
+     *
+     * @param methodName Имя метода геттера для получения значения
+     * @param field      Текстовое поле для установки значения
+     */
     private void setFieldIfMethodExists(String methodName, TextField field) {
         try {
             Method method = user.getClass().getMethod(methodName);
@@ -498,6 +542,13 @@ private void onSave() {
         }
     }
 
+    /**
+     * Отображает диалоговое окно с сообщением.
+     *
+     * @param alertType Тип сообщения (INFORMATION, WARNING, ERROR)
+     * @param title     Заголовок сообщения
+     * @param content   Текст сообщения
+     */
     private void showAlert(Alert.AlertType alertType, String title, String content) {
         Alert alert = new Alert(alertType);
         alert.setTitle(title);
@@ -516,6 +567,10 @@ private void onSave() {
     private final List<AccessGroup> availableGroups = new ArrayList<>();
 
 
+    /**
+     * Загружает список доступных групп доступа с сервера.
+     * Используется для настройки прав пользователя.
+     */
     private void loadAvailableGroups() {
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -554,6 +609,9 @@ private void onSave() {
         }
     }
 
+    /**
+     * Добавляет новую группу доступа в список групп пользователя.
+     */
     private void addAccessGroup() {
         String selectedGroup = availableGroupsComboBox.getValue();
         if (selectedGroup != null && !groupsListView.getItems().contains(selectedGroup)) {
@@ -561,6 +619,9 @@ private void onSave() {
         }
     }
 
+    /**
+     * Удаляет выбранную группу доступа из списка групп пользователя.
+     */
     private void removeAccessGroup() {
         String selectedGroup = groupsListView.getSelectionModel().getSelectedItem();
         if (selectedGroup != null) {

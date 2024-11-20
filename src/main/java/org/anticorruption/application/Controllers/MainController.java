@@ -37,6 +37,15 @@ import org.anticorruption.application.UserSession;
 
 import static org.anticorruption.application.AlertUtils.showAlert;
 
+/**
+ * Основной контроллер приложения, управляющий главным окном антикоррупционной информационной системы.
+ * Отвечает за обработку пользовательского интерфейса, загрузку и фильтрацию отчетов,
+ * управление пользователями и аутентификацией.
+ *
+ * @author Гордейчик Е.А.
+ * @version 1.0
+ * @since 10.10.2024
+ */
 public class MainController implements Initializable {
     private final String SERVER_URL = ConfigManager.getProperty("server.url");
     @FXML
@@ -75,6 +84,13 @@ public class MainController implements Initializable {
     private final HttpClient client = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
 
+    /**
+     * Инициализирует главное окно приложения при загрузке.
+     * Настраивает таблицы, фильтры, загружает первоначальные данные.
+     *
+     * @param location Местоположение используемого корневого объекта
+     * @param resources Локализационные ресурсы
+     */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupTimeField();
@@ -111,6 +127,10 @@ public class MainController implements Initializable {
         return userSession.hasGroup("CreateReport") || userSession.hasGroup("ViewReport") || userSession.hasGroup("ManageUserGroups");
     }
 
+    /**
+     * Отправляет новый отчет на сервер.
+     * Выполняет валидацию формы перед отправкой и обрабатывает ответ сервера.
+     */
     @FXML
     private void onSubmitReport() {
         try {
@@ -316,6 +336,10 @@ public class MainController implements Initializable {
         });
     }
 
+    /**
+     * Выполняет выход пользователя из системы.
+     * Очищает текущую сессию и возвращает на экран входа.
+     */
     @FXML
     private void onLogout() {
         // Очистите сессию пользователя
@@ -344,6 +368,10 @@ public class MainController implements Initializable {
         loadReports();
     }
 
+    /**
+     * Загружает список отчетов с сервера.
+     * Обновляет таблицу отчетов актуальными данными.
+     */
     private void loadReports() {
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(SERVER_URL + "/api/reports")).header("Authorization", "Bearer " + UserSession.getInstance().getToken()).GET().build();
 
@@ -572,6 +600,10 @@ public class MainController implements Initializable {
         }
     }
 
+    /**
+     * Добавляет нового пользователя в систему.
+     * Открывает диалоговое окно регистрации.
+     */
     @FXML
     private void addUser() {
         try {
@@ -592,6 +624,10 @@ public class MainController implements Initializable {
         }
     }
 
+    /**
+     * Обновляет пароль выбранного пользователя.
+     * Открывает диалоговое окно для ввода нового пароля.
+     */
     @FXML
     private void updatePassword() {
         User selectedUser = usersTable.getSelectionModel().getSelectedItem();
@@ -714,6 +750,10 @@ public class MainController implements Initializable {
         }
     }
 
+    /**
+     * Назначает агента на выбранный отчет.
+     * Открывает диалог выбора сотрудника для назначения.
+     */
     @FXML
     private void assignAgentToReport() {
         Report selectedReport = reportsTable.getSelectionModel().getSelectedItem();
@@ -755,6 +795,9 @@ public class MainController implements Initializable {
         filterButton.setOnAction(event -> applyFilter());
     }
 
+    /**
+     * Сбрасывает все фильтры и восстанавливает полный список отчетов.
+     */
     @FXML
     private void resetFilter() {
         // Очистка текстовых полей
@@ -779,6 +822,10 @@ public class MainController implements Initializable {
         loadReports();
     }
 
+    /**
+     * Применяет фильтр к списку отчетов.
+     * Формирует запрос на сервер с указанными параметрами фильтрации.
+     */
     @FXML
     public void applyFilter() {
         try {
@@ -919,6 +966,10 @@ public class MainController implements Initializable {
         return null;
     }
 
+    /**
+     * Показывает информацию об авторе приложения.
+     * Открывает диалоговое окно с информацией.
+     */
     @FXML
     private void showAboutAuthor() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);

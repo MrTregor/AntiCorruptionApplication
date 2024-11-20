@@ -18,6 +18,14 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+/**
+ * Контроллер для управления деталями отчета в антикоррупционной информационной системе.
+ * Обеспечивает отображение, редактирование и обновление статуса отчета.
+ *
+ * @author Гордейчик Е.А.
+ * @version 1.0
+ * @since 2024-10-10
+ */
 public class ReportDetailsController {
     @FXML
     private Label incidentDateLabel;
@@ -44,11 +52,20 @@ public class ReportDetailsController {
 
     private final String SERVER_URL = ConfigManager.getProperty("server.url");
 
+    /**
+     * Устанавливает отчет для отображения и заполняет поля интерфейса.
+     *
+     * @param report Отчет, детали которого будут показаны
+     */
     public void setReport(Report report) {
         this.report = report;
         populateFields();
     }
 
+    /**
+     * Заполняет поля интерфейса данными из отчета.
+     * Вызывается после установки отчета через {@link #setReport(Report)}.
+     */
     private void populateFields() {
         incidentDateLabel.setText(report.getIncidentDate());
         incidentTimeLabel.setText(report.getIncidentTime());
@@ -60,16 +77,29 @@ public class ReportDetailsController {
         solutionArea.setText(report.getSolution() != null ? report.getSolution() : "");
     }
 
+    /**
+     * Обработчик события взятия отчета в работу.
+     * Изменяет статус отчета на "В процессе" (IN_PROGRESS).
+     */
     @FXML
     private void onTakeToWork() {
         updateReportStatus("IN_PROGRESS");
     }
 
+    /**
+     * Обработчик события закрытия отчета.
+     * Изменяет статус отчета на "Закрыт" (CLOSED).
+     */
     @FXML
     private void onCloseReport() {
         updateReportStatus("CLOSED");
     }
 
+    /**
+     * Обновляет статус отчета на сервере.
+     *
+     * @param status Новый статус отчета (NEW, IN_PROGRESS, CLOSED)
+     */
     private void updateReportStatus(String status) {
         try {
             if ("CLOSED".equals(status)) {
@@ -118,6 +148,12 @@ public class ReportDetailsController {
         }
     }
 
+    /**
+     * Сохраняет решение по отчету на сервере.
+     * Доступ к сохранению зависит от прав пользователя:
+     * - Группа AccessToAllReports: полное обновление отчета
+     * - Группа SolveReport: обновление только решения
+     */
     @FXML
     private void onSave() {
         if (stage != null) {
@@ -185,6 +221,9 @@ public class ReportDetailsController {
         }
     }
 
+    /**
+     * Закрывает окно деталей отчета.
+     */
     @FXML
     private void onClose() {
         if (stage != null) {
@@ -192,6 +231,13 @@ public class ReportDetailsController {
         }
     }
 
+    /**
+     * Отображает всплывающее диалоговое окно с сообщением.
+     *
+     * @param alertType Тип alerts (INFORMATION, WARNING, ERROR и т.д.)
+     * @param title Заголовок диалогового окна
+     * @param message Текст сообщения
+     */
     private void showAlert(Alert.AlertType alertType, String title, String message) {
         javafx.application.Platform.runLater(() -> {
             Alert alert = new Alert(alertType);

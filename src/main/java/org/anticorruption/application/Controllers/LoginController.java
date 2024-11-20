@@ -28,28 +28,60 @@ import lombok.Setter;
 import org.anticorruption.application.ConfigManager;
 import org.anticorruption.application.HttpsClient;
 import org.anticorruption.application.UserSession;
-
-
 import static org.anticorruption.application.AlertUtils.showAlert;
 
+/**
+ * Контроллер для управления процессом аутентификации пользователя.
+ *
+ * Обеспечивает логику входа в систему, включая:
+ * - Отправку credentials на сервер
+ * - Обработку ответа сервера
+ * - Декодирование JWT токена
+ * - Управление пользовательской сессией
+ *
+ * @author Егор Гордейчик
+ * @version 1.0
+ * @since 10.10.2024
+ */
 public class LoginController {
+
+    /**
+     * Текстовое поле для ввода имени пользователя.
+     */
     @FXML
     private TextField usernameField;
 
+    /**
+     * Поле для ввода пароля с маскировкой символов.
+     */
     @FXML
     private PasswordField passwordField;
 
-    private Pane root; // Добавьте это поле
+    /**
+     * Корневая панель интерфейса для кастомизации.
+     */
+    private Pane root;
 
-    // Метод для установки stage извне, если потребуется
+    /**
+     * Текущее окно приложения.
+     */
     @Setter
     private Stage stage; // Добавьте это поле
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final String SERVER_URL = ConfigManager.getProperty("server.url");
 
-
-
+    /**
+     * Обработчик события входа в систему.
+     *
+     * Выполняет следующие действия:
+     * - Собирает учетные данные пользователя
+     * - Формирует HTTP-запрос к серверу авторизации
+     * - Асинхронно отправляет запрос
+     * - Обрабатывает ответ сервера
+     *
+     * @param event Событие нажатия кнопки входа
+     */
     @FXML
     protected void onLoginButtonClick(ActionEvent event) {
         String username = usernameField.getText();
@@ -88,7 +120,18 @@ public class LoginController {
         }
     }
 
-    // Modified to accept Stage parameter
+    /**
+     * Обрабатывает ответ сервера после попытки входа.
+     *
+     * Выполняет следующие действия:
+     * - Парсит JWT токен
+     * - Извлекает группы доступа и имя пользователя
+     * - Сохраняет информацию в пользовательской сессии
+     * - Открывает главную форму при успешной авторизации
+     *
+     * @param responseBody Тело ответа от сервера
+     * @param stage Текущее окно приложения
+     */
     private void handleResponse(String responseBody, Stage stage) {
         try {
             JsonNode response = mapper.readTree(responseBody);
@@ -136,7 +179,16 @@ public class LoginController {
         }
     }
 
-    // Modified to accept Stage parameter
+    /**
+     *      * Открывает главную форму приложения после успешной авторизации.
+     *      *
+     *      * Выполняет следующие действия:
+     *      * - Загружает FXML главной формы
+     *      * - Настраивает контроллер главной формы
+     *      * - Устанавливает новую сцену
+     *      *
+     *      * @param stage Текущее окно приложения
+     *      */
     private void openMainForm(Stage stage) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/anticorruption/application/main.fxml"));
@@ -155,6 +207,14 @@ public class LoginController {
         }
     }
 
+    /**
+     * Инициализация пользовательского интерфейса.
+     *
+     * Создает кастомную панель заголовка с:
+     * - Заголовком окна
+     * - Кнопкой закрытия
+     * - Стилизацией
+     */
     @FXML
     private void initialize() {
         // Создаем кастомный заголовок

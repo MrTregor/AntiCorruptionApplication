@@ -16,19 +16,47 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+/**
+ * Контроллер для регистрации новых пользователей в антикоррупционной информационной системе.
+ * Обеспечивает процесс создания нового пользовательского аккаунта с базовой аутентификацией.
+ *
+ * @author Гордейчик Е.А.
+ * @version 1.0
+ * @since 2024-10-10
+ */
 public class UserRegistrationController {
+
+    /**
+     * URL сервера для выполнения HTTP-запросов, получаемый из конфигурационного файла.
+     */
     private final String SERVER_URL = ConfigManager.getProperty("server.url");
+
+    /**
+     * Ссылка на основной контроллер для обновления списка пользователей после регистрации.
+     */
     @Setter
     private MainController mainController;
 
+    /**
+     * Текстовое поле для ввода имени пользователя.
+     */
     @FXML
     private TextField usernameField;
+
+    /**
+     * Поле для ввода пароля с маскировкой символов.
+     */
     @FXML
     private PasswordField passwordField;
 
     private final HttpClient client = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
 
+    /**
+     * Обработчик события регистрации нового пользователя.
+     * Отправляет HTTP-запрос на сервер для создания нового пользователя.
+     * В случае успеха обновляет список пользователей в главном контроллере.
+     */
     @FXML
     private void onRegister() {
         try {
@@ -65,12 +93,22 @@ public class UserRegistrationController {
         }
     }
 
-
+    /**
+     * Закрывает окно регистрации без сохранения данных.
+     * Вызывается при отмене процесса регистрации.
+     */
     @FXML
     private void onCancel() {
         ((Stage) usernameField.getScene().getWindow()).close();
     }
 
+    /**
+     * Отображает диалоговое окно с информационным или предупреждающим сообщением.
+     *
+     * @param alertType Тип сообщения (INFORMATION, WARNING, ERROR)
+     * @param title Заголовок диалогового окна
+     * @param content Текст сообщения
+     */
     private void showAlert(Alert.AlertType alertType, String title, String content) {
         Alert alert = new Alert(alertType);
         alert.setTitle(title);
